@@ -1,12 +1,17 @@
 import { useState } from "react";
 import { NHBP } from "../constants";
 
-export const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
+export const GlassCard = ({ children, active, onClick, style, hoverGlow, ariaLabel }) => {
   const [hovered, setHovered] = useState(false);
   const glowColor = hoverGlow || NHBP.turquoise;
   return (
     <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={ariaLabel}
+      aria-pressed={onClick && active !== undefined ? active : undefined}
       onClick={onClick}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(e); } } : undefined}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{

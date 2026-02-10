@@ -164,6 +164,7 @@ export default function NHBPPortal() {
   const BackToPortalButton = ({ onClick }) => (
     <button
       onClick={onClick}
+      aria-label="Back to portal home"
       style={{
         position: "fixed", top: 16, left: 16, zIndex: 9999,
         background: "rgba(8,9,12,0.85)", backdropFilter: "blur(16px)",
@@ -254,7 +255,7 @@ export default function NHBPPortal() {
   // ─── WELCOME SCREEN ─────────────────────────────────────
   if (screen === "welcome") {
     return (
-      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <main style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }} aria-label="NHBP Communications Request Portal">
         <Background />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", position: "relative", zIndex: 1, animation: "slideUp 0.8s ease" }}>
           <div style={{
@@ -318,14 +319,14 @@ export default function NHBPPortal() {
             Takes about 2 minutes
           </p>
         </div>
-      </div>
+      </main>
     );
   }
 
   // ─── CONFIRMATION SCREEN ────────────────────────────────
   if (submitted) {
     return (
-      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div role="status" aria-label="Request submitted successfully" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <Background />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", position: "relative", zIndex: 1, animation: "scaleIn 0.5s ease" }}>
           <div style={{
@@ -489,7 +490,7 @@ export default function NHBPPortal() {
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>What’s your name?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>So we know who we’re working with</p>
             <input ref={inputRef} type="text" placeholder="Type your full name..." value={formData.name}
-              onChange={e => setFormData(d => ({ ...d, name: e.target.value }))} onKeyDown={handleKeyDown} style={inputStyle} />
+              aria-label="Full name" onChange={e => setFormData(d => ({ ...d, name: e.target.value }))} onKeyDown={handleKeyDown} style={inputStyle} />
           </div>
         );
 
@@ -503,7 +504,7 @@ export default function NHBPPortal() {
             </h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>We’ll send updates and your tracking link here</p>
             <input ref={inputRef} type="email" placeholder="yourname@nhbp-nsn.gov" value={formData.email}
-              onChange={e => setFormData(d => ({ ...d, email: e.target.value }))} onKeyDown={handleKeyDown} style={inputStyle} />
+              aria-label="Email address" onChange={e => setFormData(d => ({ ...d, email: e.target.value }))} onKeyDown={handleKeyDown} style={inputStyle} />
           </div>
         );
 
@@ -543,7 +544,7 @@ export default function NHBPPortal() {
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Give your project a title</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Something short and descriptive</p>
             <input ref={inputRef} type="text" placeholder='"Spring Pow Wow Flyer" or "Staff Headshots March"'
-              value={formData.title} onChange={e => setFormData(d => ({ ...d, title: e.target.value }))} onKeyDown={handleKeyDown} style={inputStyle} />
+              aria-label="Project title" value={formData.title} onChange={e => setFormData(d => ({ ...d, title: e.target.value }))} onKeyDown={handleKeyDown} style={inputStyle} />
           </div>
         );
 
@@ -553,7 +554,7 @@ export default function NHBPPortal() {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>06 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Tell us about your project</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Purpose, audience, specific ideas — the more detail, the faster we deliver</p>
-            <textarea ref={inputRef} placeholder="Describe what you need..."
+            <textarea ref={inputRef} placeholder="Describe what you need..." aria-label="Project description"
               value={formData.description} onChange={e => setFormData(d => ({ ...d, description: e.target.value }))}
               style={{
                 width: "100%", maxWidth: 520, minHeight: 140, resize: "vertical",
@@ -605,9 +606,10 @@ export default function NHBPPortal() {
 
   return (
     <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <a href="#form-content" style={{ position: "absolute", left: -9999, top: "auto", width: 1, height: 1, overflow: "hidden", zIndex: 9999, background: NHBP.turquoise, color: "#fff", padding: "8px 16px", fontSize: 14 }} onFocus={e => { e.target.style.left = "16px"; e.target.style.top = "16px"; e.target.style.width = "auto"; e.target.style.height = "auto"; }} onBlur={e => { e.target.style.left = "-9999px"; }}>Skip to form content</a>
       <Background />
 
-      <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.03)", zIndex: 100 }}>
+      <div role="progressbar" aria-valuenow={step + 1} aria-valuemin={1} aria-valuemax={totalSteps} aria-label={`Step ${step + 1} of ${totalSteps}`} style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.03)", zIndex: 100 }}>
         <div style={{
           height: "100%", borderRadius: "0 1px 1px 0",
           width: `${((step + 1) / totalSteps) * 100}%`,
@@ -617,26 +619,26 @@ export default function NHBPPortal() {
         }} />
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 28px", position: "relative", zIndex: 10 }}>
+      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 28px", position: "relative", zIndex: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "rgba(255,255,255,0.4)" }}>
           🐢 NHBP Communications
         </span>
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }} aria-live="polite">
           {formData.service && `${SERVICES.find(s => s.id === formData.service)?.icon} ${SERVICES.find(s => s.id === formData.service)?.label}`}
         </span>
-      </div>
+      </header>
 
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 28px 100px", position: "relative", zIndex: 1 }}>
+      <div id="form-content" style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 28px 100px", position: "relative", zIndex: 1 }}>
         {renderStep()}
       </div>
 
-      <div style={{
+      <nav aria-label="Form navigation" style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
         display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 28px",
         background: "linear-gradient(0deg, rgba(8,9,12,0.95) 50%, transparent)",
         backdropFilter: "blur(12px)",
       }}>
-        <button onClick={goBack} disabled={step === 0}
+        <button onClick={goBack} disabled={step === 0} aria-label="Go to previous step"
           style={{
             background: "none", border: "none", color: "rgba(255,255,255,0.35)",
             fontSize: 13, cursor: step === 0 ? "default" : "pointer", padding: "10px 16px",
@@ -646,9 +648,9 @@ export default function NHBPPortal() {
           ← Back
         </button>
 
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+        <div role="group" aria-label="Form progress" style={{ display: "flex", gap: 4, alignItems: "center" }}>
           {Array.from({ length: totalSteps }).map((_, i) => (
-            <div key={i} style={{
+            <div key={i} aria-hidden="true" style={{
               height: 6, borderRadius: 3,
               width: i === step ? 28 : 6,
               background: i === step ? NHBP.turquoise : i < step ? NHBP.turquoise + "50" : "rgba(255,255,255,0.1)",
@@ -658,7 +660,7 @@ export default function NHBPPortal() {
           ))}
         </div>
 
-        <button onClick={goNext} disabled={!canAdvance()}
+        <button onClick={goNext} disabled={!canAdvance()} aria-label={step === totalSteps - 1 ? "Submit request" : "Go to next step"}
           style={{
             background: canAdvance() ? `${NHBP.turquoise}15` : "transparent",
             border: `1px solid ${canAdvance() ? NHBP.turquoise + "30" : "rgba(255,255,255,0.05)"}`,
@@ -670,7 +672,7 @@ export default function NHBPPortal() {
           }}>
           {step === totalSteps - 1 ? "Submit ✓" : "Next →"}
         </button>
-      </div>
+      </nav>
     </div>
   );
 }
