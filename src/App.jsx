@@ -531,6 +531,43 @@ const SubmissionStore = {
   },
 };
 
+// Generate a unique ticket number (checks against existing submissions)
+const generateTicket = (prefix) => {
+  const existing = new Set(SubmissionStore.getAll().map(s => s.id));
+  let ticket;
+  do {
+    ticket = `${prefix}-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`;
+  } while (existing.has(ticket));
+  return ticket;
+};
+
+// Shared Trello card creation
+const createTrelloCard = async (cardName, descLines) => {
+  const key = import.meta.env.VITE_TRELLO_API_KEY;
+  const token = import.meta.env.VITE_TRELLO_TOKEN;
+  const listId = import.meta.env.VITE_TRELLO_LIST_ID;
+  if (!key || !token || !listId) return;
+  try {
+    const params = new URLSearchParams({
+      key, token, idList: listId,
+      name: cardName,
+      desc: descLines.filter(Boolean).join("\n"),
+      pos: "top",
+    });
+    await fetch("https://api.trello.com/1/cards?" + params.toString(), { method: "POST" });
+  } catch (e) { console.error("Trello card creation failed:", e); }
+};
+
+const trelloHeader = (ticket) => [
+  "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501",
+  "\uD83D\uDCCB COMMUNICATIONS PORTAL SUBMISSION",
+  "\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501",
+  "",
+  `\uD83C\uDFAB Ticket: ${ticket}`,
+  `\uD83D\uDCC5 Submitted: ${new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}`,
+  "",
+];
+
 const VD_PRIORITIES = [
   { id: "standard", label: "Standard", desc: "2–3 weeks", color: NHBP.turquoise },
   { id: "priority", label: "Priority", desc: "1–2 weeks", color: "#e0a630" },
@@ -617,26 +654,19 @@ function VisualDesignForm({ onBackToPortal }) {
     setTimeout(async () => {
       if (step < totalSteps - 1) setStep(s => s + 1);
       else {
-        const ticket = `NHBP-DES-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`;
+        const ticket = generateTicket("NHBP-DES");
         setTicket(ticket);
-        // ── TRELLO API: Create card on The Hub → Tickets & Requests ──
-        try {
-          const desc = [
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "📋 COMMUNICATIONS PORTAL SUBMISSION",
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "",
-            `🎫 Ticket: ${ticket}`,
-            `📅 Submitted: ${new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}`,
-            "",
-            "👤 REQUESTER",
+        await createTrelloCard(
+          `\uD83C\uDFA8 ${form.headline || "Visual Design Request"} \u2014 ${form.requesterName || "Unknown"}`,
+          [
+            ...trelloHeader(ticket),
+            "\uD83D\uDC64 REQUESTER",
             `Name: ${form.requesterName || "Not provided"}`,
             `Department: ${form.department || "Not provided"}`,
             `Email: ${form.email || "Not provided"}`,
             `Phone: ${form.phone || "Not provided"}`,
             "",
-            "🎨 DESIGN REQUEST",
-            `Service: Visual Designs`,
+            "\uD83C\uDFA8 DESIGN REQUEST",
             `Headline: ${form.headline || "Not provided"}`,
             `Piece Type: ${form.pieceType || "Not provided"}`,
             `Format: ${form.format || "Not provided"}`,
@@ -644,31 +674,19 @@ function VisualDesignForm({ onBackToPortal }) {
             `Printing Needed: ${form.needPrinting || "Not specified"}`,
             form.multiPage ? `Multi-page: Yes (${form.multiPageType || "N/A"})` : "",
             "",
-            "📅 DATE / TIME / LOCATION",
+            "\uD83D\uDCC5 DATE / TIME / LOCATION",
             `Date: ${form.date || "Not provided"}`,
             `Time: ${form.time || "Not provided"}`,
             `Location: ${form.location || "Not provided"}`,
             "",
-            "📝 BODY COPY",
+            "\uD83D\uDCDD BODY COPY",
             form.bodyText || "Not provided",
             "",
-            form.additionalNotes ? `💬 ADDITIONAL NOTES\n${form.additionalNotes}` : "",
+            form.additionalNotes ? `\uD83D\uDCAC ADDITIONAL NOTES\n${form.additionalNotes}` : "",
             "",
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "🐢 Submitted via NHBP Communications Portal"
-          ].filter(Boolean).join("\n");
-
-          const cardName = `🎨 ${form.headline || "Visual Design Request"} — ${form.requesterName || "Unknown"}`;
-          const params = new URLSearchParams({
-            key: import.meta.env.VITE_TRELLO_API_KEY || "",
-            token: import.meta.env.VITE_TRELLO_TOKEN || "",
-            idList: import.meta.env.VITE_TRELLO_LIST_ID || "",
-            name: cardName,
-            desc: desc,
-            pos: "top"
-          });
-          await fetch("https://api.trello.com/1/cards?" + params.toString(), { method: "POST" });
-        } catch (e) { console.error("Trello card creation failed:", e); }
+            "\uD83D\uDC22 Submitted via NHBP Communications Portal",
+          ]
+        );
         SubmissionStore.save({
           ticketNumber: ticket, serviceType: "Visual Designs", serviceId: "visual",
           requesterName: form.requesterName || form.gsrName || "", email: form.email || form.gsrEmail || "",
@@ -2311,12 +2329,21 @@ function StationeryKitForm({ onBackToPortal }) {
     }, 280);
   };
 
-  const handleSubmit = () => {
-    const t = `NHBP-SK-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const handleSubmit = async () => {
+    const t = generateTicket("NHBP-SK");
     setTicketNumber(t);
+    const name = `${form.firstName} ${form.lastName}`.trim();
+    await createTrelloCard(
+      `\u25CE ${form.items.join(", ") || "Stationery Kit"} \u2014 ${name || "Unknown"}`,
+      [...trelloHeader(t),
+        "\uD83D\uDC64 REQUESTER", `Name: ${name}`, `Email: ${form.email || "N/A"}`, `Title: ${form.title || "N/A"}`, `Department: ${form.department || "N/A"}`, "",
+        "\uD83D\uDCE6 STATIONERY REQUEST", `Enterprise: ${form.enterprise || "N/A"}`, `Items: ${form.items.join(", ") || "None"}`, `Reason: ${form.reason || "N/A"}`,
+        `Office Location: ${form.officeLocation || "N/A"}`, `Quantity: ${form.quantity || "N/A"}`, form.notes ? `\nNotes: ${form.notes}` : "",
+        "", "\uD83D\uDC22 Submitted via NHBP Communications Portal"]
+    );
     SubmissionStore.save({
       ticketNumber: t, serviceType: "Employee Stationery Kit", serviceId: "stationery",
-      requesterName: `${form.firstName} ${form.lastName}`.trim(), email: form.email,
+      requesterName: name, email: form.email,
       department: form.department, title: form.title, enterprise: form.enterprise,
       items: form.items, reason: form.reason, officeLocation: form.officeLocation,
       quantity: form.quantity, notes: form.notes,
@@ -2691,13 +2718,23 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 
   const goTo = (n) => { if (animating) return; setAnimating(true); setTimeout(() => { setStep(n); setAnimating(false); }, 250); };
 
-  const handleSubmit = () => {
-    const t = `NHBP-HS-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const handleSubmit = async () => {
+    const t = generateTicket("NHBP-HS");
     setTicketNumber(t);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    const name = `${form.firstName} ${form.lastName}`.trim();
+    await createTrelloCard(
+      `\uD83D\uDCF7 Headshot \u2014 ${name || "Unknown"}`,
+      [...trelloHeader(t),
+        "\uD83D\uDC64 REQUESTER", `Name: ${name}`, `Email: ${form.email || "N/A"}`, `Phone: ${form.phone || "N/A"}`,
+        `Department: ${form.department || "N/A"}`, `Title: ${form.title || "N/A"}`, "",
+        "\uD83D\uDCF7 HEADSHOT REQUEST", `Type: ${form.headshotType || "N/A"}`, `Location Pref: ${form.locationPref || "N/A"}`,
+        form.groupNames ? `Group Names: ${form.groupNames}` : "", form.notes ? `Notes: ${form.notes}` : "",
+        "", "\uD83D\uDC22 Submitted via NHBP Communications Portal"]
+    );
     SubmissionStore.save({
       ticketNumber: t, serviceType: "The Studio Hub", serviceId: "studio",
-      requesterName: `${form.firstName} ${form.lastName}`.trim(), email: form.email,
+      requesterName: name, email: form.email,
       phone: form.phone, department: form.department, title: form.title,
       headshotType: form.headshotType, locationPref: form.locationPref,
       groupNames: form.groupNames, notes: form.notes,
@@ -3046,13 +3083,25 @@ function InstantAlertForm({ onBackToPortal }) {
 
   const goTo = (n) => { if (animating) return; setAnimating(true); setTimeout(() => { setStep(n); setAnimating(false); }, 250); };
 
-  const handleSubmit = () => {
-    const t = `NHBP-IA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const handleSubmit = async () => {
+    const t = generateTicket("NHBP-IA");
     setTicketNumber(t);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    const name = `${form.firstName} ${form.lastName}`.trim();
+    const chList = Object.entries(form.channels).filter(([,v]) => v).map(([k]) => k).join(", ");
+    await createTrelloCard(
+      `\u26A1 ALERT: ${form.subject || "Instant Alert"} \u2014 ${name || "Unknown"}`,
+      [...trelloHeader(t),
+        "\uD83D\uDC64 REQUESTER", `Name: ${name}`, `Email: ${form.email || "N/A"}`, `Phone: ${form.phone || "N/A"}`, `Department: ${form.department || "N/A"}`, "",
+        "\u26A1 INSTANT ALERT", `Urgency: ${form.urgency || "N/A"}`, `Subject: ${form.subject || "N/A"}`,
+        `Message: ${form.message || "N/A"}`, `Channels: ${chList || "N/A"}`, `Audience: ${form.audience || "N/A"}`,
+        `Effective Date: ${form.effectiveDate || "N/A"}`, `Effective Time: ${form.effectiveTime || "N/A"}`,
+        `Approved By: ${form.approvedBy || "N/A"}`,
+        "", "\uD83D\uDC22 Submitted via NHBP Communications Portal"]
+    );
     SubmissionStore.save({
       ticketNumber: t, serviceType: "Instant Alert", serviceId: "instant-alert",
-      requesterName: `${form.firstName} ${form.lastName}`.trim(), email: form.email,
+      requesterName: name, email: form.email,
       phone: form.phone, department: form.department, urgency: form.urgency,
       channels: form.channels, subject: form.subject, message: form.message,
       audience: form.audience, effectiveDate: form.effectiveDate,
@@ -3467,13 +3516,23 @@ function QTPFeedbackSubForm({ onBack }) {
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
   const goTo = (n) => { if (animating) return; setAnimating(true); setTimeout(() => { setStep(n); setAnimating(false); }, 250); };
 
-  const handleSubmit = () => {
-    const t = `NHBP-QTF-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const handleSubmit = async () => {
+    const t = generateTicket("NHBP-QTF");
     setTicketNumber(t);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    const name = `${form.firstName} ${form.lastName}`.trim();
+    await createTrelloCard(
+      `\uD83D\uDC22 Turtle Press Feedback \u2014 ${name || "Unknown"}`,
+      [...trelloHeader(t),
+        "\uD83D\uDC64 REQUESTER", `Name: ${name}`, `Email: ${form.email || "N/A"}`, `Phone: ${form.phone || "N/A"}`, `Tribal ID: ${form.tribalId || "N/A"}`, "",
+        "\uD83D\uDCF0 TURTLE PRESS FEEDBACK", `Edition: ${form.edition || "N/A"}`, `Feedback Type: ${form.feedbackType || "N/A"}`,
+        `Page Number: ${form.pageNumber || "N/A"}`, `Article Title: ${form.articleTitle || "N/A"}`,
+        `Feedback: ${form.feedback || "N/A"}`, form.correctionDetails ? `Correction Details: ${form.correctionDetails}` : "",
+        "", "\uD83D\uDC22 Submitted via NHBP Communications Portal"]
+    );
     SubmissionStore.save({
       ticketNumber: t, serviceType: "Turtle Press Feedback", serviceId: "turtle-press",
-      requesterName: `${form.firstName} ${form.lastName}`.trim(), email: form.email,
+      requesterName: name, email: form.email,
       phone: form.phone, tribalId: form.tribalId, edition: form.edition,
       feedbackType: form.feedbackType, pageNumber: form.pageNumber,
       articleTitle: form.articleTitle, feedback: form.feedback,
@@ -3842,13 +3901,26 @@ function QTPSubmissionSubForm({ onBack }) {
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
   const goTo = (n) => { if (animating) return; setAnimating(true); setTimeout(() => { setStep(n); setAnimating(false); }, 250); };
 
-  const handleSubmit = () => {
-    const t = `NHBP-QTP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const handleSubmit = async () => {
+    const t = generateTicket("NHBP-QTP");
     setTicketNumber(t);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    const name = `${form.firstName} ${form.lastName}`.trim();
+    await createTrelloCard(
+      `\uD83D\uDC22 ${form.submissionType || "Turtle Press"} \u2014 ${name || "Unknown"}`,
+      [...trelloHeader(t),
+        "\uD83D\uDC64 REQUESTER", `Name: ${name}`, `Email: ${form.email || "N/A"}`, `Phone: ${form.phone || "N/A"}`,
+        `Tribal ID: ${form.tribalId || "N/A"}`, `Identity: ${form.identity || "N/A"}`, "",
+        "\uD83D\uDCF0 TURTLE PRESS SUBMISSION", `Type: ${form.submissionType || "N/A"}`,
+        `Department: ${form.department || form.committee || "N/A"}`, `Title: ${form.articleTitle || form.activityName || "N/A"}`,
+        form.articleContent ? `Content: ${form.articleContent}` : "", form.storyDescription ? `Story: ${form.storyDescription}` : "",
+        form.whyNewsworthy ? `Why Newsworthy: ${form.whyNewsworthy}` : "", form.whenHappening ? `When: ${form.whenHappening}` : "",
+        form.photoCredit ? `Photo Credit: ${form.photoCredit}` : "", form.additionalNotes ? `Notes: ${form.additionalNotes}` : "",
+        "", "\uD83D\uDC22 Submitted via NHBP Communications Portal"]
+    );
     SubmissionStore.save({
       ticketNumber: t, serviceType: "Turtle Press Submission", serviceId: "turtle-press",
-      requesterName: `${form.firstName} ${form.lastName}`.trim(), email: form.email,
+      requesterName: name, email: form.email,
       phone: form.phone, tribalId: form.tribalId, identity: form.identity,
       submissionType: form.submissionType, department: form.department || form.committee || "",
       articleTitle: form.articleTitle || form.activityName || "",
@@ -4339,13 +4411,26 @@ function QTPArticleSubForm({ onBack }) {
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
   const goTo = (n) => { if (animating) return; setAnimating(true); setTimeout(() => { setStep(n); setAnimating(false); }, 250); };
 
-  const handleSubmit = () => {
-    const t = `NHBP-QTA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const handleSubmit = async () => {
+    const t = generateTicket("NHBP-QTA");
     setTicketNumber(t);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    const name = `${form.firstName} ${form.lastName}`.trim();
+    await createTrelloCard(
+      `\uD83D\uDCDD ${form.articleTitle || form.activityName || "Article Submission"} \u2014 ${name || "Unknown"}`,
+      [...trelloHeader(t),
+        "\uD83D\uDC64 REQUESTER", `Name: ${name}`, `Email: ${form.email || "N/A"}`, `Phone: ${form.phone || "N/A"}`,
+        `Tribal ID: ${form.tribalId || "N/A"}`, `Identity: ${form.identity || "N/A"}`,
+        `Department: ${form.department || form.committee || "N/A"}`, "",
+        "\uD83D\uDCDD ARTICLE SUBMISSION", `Format: ${form.submissionFormat || "N/A"}`, `Title: ${form.articleTitle || form.activityName || "N/A"}`,
+        form.articleContent ? `Content: ${form.articleContent}` : "", form.storyDescription ? `Story: ${form.storyDescription}` : "",
+        form.whyNewsworthy ? `Why Newsworthy: ${form.whyNewsworthy}` : "", form.whenHappening ? `When: ${form.whenHappening}` : "",
+        form.photoCredit ? `Photo Credit: ${form.photoCredit}` : "", form.additionalNotes ? `Notes: ${form.additionalNotes}` : "",
+        "", "\uD83D\uDC22 Submitted via NHBP Communications Portal"]
+    );
     SubmissionStore.save({
       ticketNumber: t, serviceType: "Turtle Press Article", serviceId: "turtle-press",
-      requesterName: `${form.firstName} ${form.lastName}`.trim(), email: form.email,
+      requesterName: name, email: form.email,
       phone: form.phone, tribalId: form.tribalId, identity: form.identity,
       department: form.department || form.committee || "",
       submissionFormat: form.submissionFormat, articleTitle: form.articleTitle || form.activityName || "",
@@ -4796,13 +4881,23 @@ function GeneralRequestForm({ onBackToPortal }) {
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
   const goTo = (n) => { if (animating) return; setAnimating(true); setTimeout(() => { setStep(n); setAnimating(false); }, 250); };
 
-  const handleSubmit = () => {
-    const t = `NHBP-GR-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const handleSubmit = async () => {
+    const t = generateTicket("NHBP-GR");
     setTicketNumber(t);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    const name = `${form.firstName} ${form.lastName}`.trim();
+    await createTrelloCard(
+      `\uD83D\uDCA1 ${form.subject || "General Request"} \u2014 ${name || "Unknown"}`,
+      [...trelloHeader(t),
+        "\uD83D\uDC64 REQUESTER", `Name: ${name}`, `Email: ${form.email || "N/A"}`, `Phone: ${form.phone || "N/A"}`, `Department: ${form.department || "N/A"}`, "",
+        "\uD83D\uDCA1 GENERAL REQUEST", `Area: ${form.area || "N/A"}`, `Priority: ${form.priority || "N/A"}`,
+        `Subject: ${form.subject || "N/A"}`, `Description: ${form.description || "N/A"}`,
+        `Deadline: ${form.deadline || "N/A"}`, form.notes ? `Notes: ${form.notes}` : "",
+        "", "\uD83D\uDC22 Submitted via NHBP Communications Portal"]
+    );
     SubmissionStore.save({
       ticketNumber: t, serviceType: "General Request", serviceId: "other",
-      requesterName: `${form.firstName} ${form.lastName}`.trim(), email: form.email,
+      requesterName: name, email: form.email,
       phone: form.phone, department: form.department, area: form.area,
       priority: form.priority, subject: form.subject, description: form.description,
       deadline: form.deadline, notes: form.notes,
@@ -5217,6 +5312,7 @@ function AdminDashboard({ onExit }) {
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button onClick={refresh} style={{ ...A.exitBtn, padding: "8px 14px" }} className="admin-exit" title="Refresh">↻ Refresh</button>
+          <button onClick={() => { sessionStorage.removeItem(ADMIN_SESSION_KEY); onExit(); }} style={{ ...A.exitBtn, color: "#ba0c2f", borderColor: "rgba(186,12,47,0.3)" }} className="admin-exit">Sign Out</button>
           <button onClick={onExit} style={A.exitBtn} className="admin-exit">← Back to Portal</button>
         </div>
       </div>
@@ -5417,11 +5513,21 @@ export default function NHBPPortal() {
     setTimeout(() => { setStep(s => s - 1); setAnimating(false); }, 300);
   };
 
-  const handleSubmit = () => {
-    const t = `NHBP-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+  const handleSubmit = async () => {
+    const t = generateTicket("NHBP");
+    const svcLabel = SERVICES.find(s => s.id === formData.service)?.label || "Request";
     setTicketNumber(t);
+    await createTrelloCard(
+      `\uD83D\uDCCB ${formData.title || svcLabel} \u2014 ${formData.name || "Unknown"}`,
+      [...trelloHeader(t),
+        "\uD83D\uDC64 REQUESTER", `Name: ${formData.name || "N/A"}`, `Email: ${formData.email || "N/A"}`, `Department: ${formData.department || "N/A"}`, "",
+        `\uD83D\uDCCB ${svcLabel.toUpperCase()}`, `Title: ${formData.title || "N/A"}`,
+        `Priority: ${PRIORITIES.find(p => p.id === formData.priority)?.label || "N/A"}`,
+        `Description: ${formData.description || "N/A"}`,
+        "", "\uD83D\uDC22 Submitted via NHBP Communications Portal"]
+    );
     SubmissionStore.save({
-      ticketNumber: t, serviceType: SERVICES.find(s => s.id === formData.service)?.label || "Request",
+      ticketNumber: t, serviceType: svcLabel,
       serviceId: formData.service, requesterName: formData.name, email: formData.email,
       department: formData.department, title: formData.title, description: formData.description,
       priority: formData.priority,
