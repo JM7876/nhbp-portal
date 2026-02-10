@@ -1,4 +1,30 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+
+// ═══════════════════════════════════════════════════════════
+//  ERROR BOUNDARY
+// ═══════════════════════════════════════════════════════════
+class PortalErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error, info) { console.error("Portal error:", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#080a10", color: "#f0f0f0", fontFamily: "Tahoma, 'DM Sans', sans-serif", textAlign: "center", padding: "40px 24px" }}>
+          <div style={{ width: 80, height: 80, borderRadius: "50%", background: "rgba(186,12,47,0.15)", border: "1px solid rgba(186,12,47,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, marginBottom: 28 }}>!</div>
+          <h1 style={{ fontSize: 28, fontWeight: 300, margin: "0 0 12px", letterSpacing: "-0.02em" }}>Something went wrong</h1>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", maxWidth: 400, lineHeight: 1.7, margin: "0 0 32px" }}>
+            The portal encountered an unexpected error. Your data has been saved. Please refresh the page to continue.
+          </p>
+          <button onClick={() => window.location.reload()} style={{ padding: "12px 32px", background: "rgba(20,169,162,0.15)", border: "1px solid rgba(20,169,162,0.4)", borderRadius: 10, color: "#1bc4bc", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+            Refresh Page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const NHBP = {
   turquoise: "#14A9A2",
@@ -4994,6 +5020,55 @@ function GeneralRequestForm({ onBackToPortal }) {
 }
 
 // ===========================================================
+//  ADMIN PASSWORD GATE
+// ===========================================================
+const ADMIN_SESSION_KEY = "nhbp_admin_auth";
+
+function AdminGate({ onExit, children }) {
+  const [authed, setAuthed] = useState(() => sessionStorage.getItem(ADMIN_SESSION_KEY) === "1");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    const expected = import.meta.env.VITE_ADMIN_PASSWORD || "nhbp-admin";
+    if (password === expected) {
+      sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
+      setAuthed(true);
+    } else {
+      setError(true); setShake(true);
+      setTimeout(() => setShake(false), 500);
+    }
+  };
+
+  if (authed) return children;
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "linear-gradient(145deg, #080a10 0%, #0d1220 50%, #080a10 100%)", fontFamily: "'DM Sans', Tahoma, sans-serif", color: C.textPrimary, padding: "40px 24px" }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+      <style>{`@keyframes headShake { 0% { transform: translateX(0); } 12.5% { transform: translateX(-6px); } 37.5% { transform: translateX(5px); } 62.5% { transform: translateX(-3px); } 87.5% { transform: translateX(2px); } 100% { transform: translateX(0); } }`}</style>
+      <div style={{ width: 56, height: 56, borderRadius: 16, background: `linear-gradient(135deg, ${C.turquoise}25, ${C.maroon}15)`, border: `1px solid ${C.turquoise}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, marginBottom: 28 }}>🔒</div>
+      <h2 style={{ fontSize: 24, fontWeight: 300, margin: "0 0 6px", letterSpacing: "-0.02em" }}>Admin Access</h2>
+      <p style={{ fontSize: 14, color: C.textDim, margin: "0 0 28px" }}>Enter your password to continue</p>
+      <form onSubmit={handleLogin} style={{ width: "100%", maxWidth: 340, animation: shake ? "headShake 0.5s ease" : "none" }}>
+        <input
+          type="password" value={password} onChange={e => { setPassword(e.target.value); setError(false); }} autoFocus placeholder="Password"
+          style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${error ? "#ba0c2f60" : C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, outline: "none", fontFamily: "inherit", boxSizing: "border-box", transition: "border-color 0.2s" }}
+        />
+        {error && <p style={{ fontSize: 12, color: "#ba0c2f", margin: "8px 0 0", textAlign: "center" }}>Incorrect password</p>}
+        <button type="submit" style={{ width: "100%", marginTop: 14, padding: "13px 0", background: `linear-gradient(135deg, ${C.turquoise}20, ${C.turquoise}10)`, border: `1px solid ${C.turquoise}40`, borderRadius: 10, color: C.turquoise, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.2s" }}>
+          Sign In
+        </button>
+      </form>
+      <button onClick={onExit} style={{ marginTop: 20, background: "none", border: "none", color: C.textDim, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+        ← Back to Portal
+      </button>
+    </div>
+  );
+}
+
+// ===========================================================
 //  ADMIN DASHBOARD
 // ===========================================================
 function AdminDashboard({ onExit }) {
@@ -5043,6 +5118,25 @@ function AdminDashboard({ onExit }) {
     SubmissionStore.delete(id);
     refresh();
     if (selected?.id === id) setSelected(null);
+  };
+
+  const exportCSV = () => {
+    if (filtered.length === 0) return;
+    const cols = ["Ticket", "Service", "Status", "Submitted", "Name", "Email", "Department", "Phone", "Priority", "Subject/Title", "Description/Notes"];
+    const escape = (v) => { const s = String(v || "").replace(/"/g, '""'); return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s}"` : s; };
+    const rows = filtered.map(s => [
+      s.id, s.serviceType, statusLabels[s.status] || s.status,
+      s.submittedAt ? new Date(s.submittedAt).toLocaleString() : "",
+      s.requesterName, s.email, s.department, s.phone,
+      s.priority || s.urgency || "", s.subject || s.headline || s.articleTitle || s.title || "",
+      s.description || s.message || s.feedback || s.notes || "",
+    ].map(escape).join(","));
+    const csv = [cols.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `nhbp-submissions-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
   };
 
   const formatDate = (iso) => {
@@ -5181,6 +5275,9 @@ function AdminDashboard({ onExit }) {
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
             </select>
+            <button onClick={exportCSV} disabled={filtered.length === 0} className="admin-exit" style={{ ...A.exitBtn, opacity: filtered.length === 0 ? 0.4 : 1, padding: "10px 16px", fontSize: 13 }}>
+              Export CSV
+            </button>
           </div>
 
           {/* Table */}
@@ -5263,6 +5360,7 @@ function AdminDashboard({ onExit }) {
 // ===========================================================
 //  MAIN PORTAL
 // ===========================================================
+export { PortalErrorBoundary };
 export default function NHBPPortal() {
   const [screen, setScreen] = useState(() => window.location.hash === "#admin" ? "admin" : "welcome");
   const [step, setStep] = useState(0);
@@ -5424,7 +5522,12 @@ export default function NHBPPortal() {
 
   // ─── ROUTE: ADMIN DASHBOARD ────────────────────────────
   if (screen === "admin") {
-    return <AdminDashboard onExit={() => { window.location.hash = ""; setScreen("welcome"); }} />;
+    const exitAdmin = () => { window.location.hash = ""; setScreen("welcome"); };
+    return (
+      <AdminGate onExit={exitAdmin}>
+        <AdminDashboard onExit={exitAdmin} />
+      </AdminGate>
+    );
   }
 
   // ─── ROUTE: VISUAL DESIGNS FORM ─────────────────────────
