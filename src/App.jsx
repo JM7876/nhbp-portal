@@ -46,8 +46,49 @@ const DEPARTMENTS = [
   "Pow Wow Committee", "Public Safety", "Social Services", "Tribal Council", "Youth Services"
 ];
 
+const C = {
+  dark: "#0a0e14", darkCard: "#111820",
+  turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
+  turquoiseGlow: "rgba(64, 181, 173, 0.3)",
+  maroon: "#6b2737", maroonLight: "#8a3a4d",
+  gold: "#c9a84c", goldLight: "#e0c76e",
+  green: "#2d6a4f", greenLight: "#40916c",
+  red: "#ba0c2f", redLight: "#e02040",
+  textPrimary: "rgba(255,255,255,0.92)",
+  textSecondary: "rgba(255,255,255,0.55)",
+  textDim: "rgba(255,255,255,0.3)",
+  border: "rgba(255,255,255,0.08)",
+  glass: "rgba(255,255,255,0.03)",
+};
+
+const FORM_DEPTS = [
+  { value: "Administration", label: "Administration" },
+  { value: "Bkedé O Mshiké 🐢", label: "🐢 Bkedé O Mshiké" },
+  { value: "Communications 📰", label: "📰 Communications" },
+  { value: "Culture 🪶", label: "🪶 Culture" },
+  { value: "Enrollment", label: "Enrollment" },
+  { value: "Environmental 🌍", label: "🌍 Environmental" },
+  { value: "Finance", label: "Finance" },
+  { value: "Gaming Commission 🎰", label: "🎰 Gaming Commission" },
+  { value: "Government Records 🗃️", label: "🗃️ Government Records" },
+  { value: "Health and Human Services 🥼", label: "🥼 Health & Human Services" },
+  { value: "Housing 🏡", label: "🏡 Housing" },
+  { value: "Human Resources 💼", label: "💼 Human Resources" },
+  { value: "Information Technology 🧑‍💻", label: "🧑‍💻 Information Technology" },
+  { value: "Legal 👩‍💼", label: "👩‍💼 Legal" },
+  { value: "Membership Services ⛹️‍♂️", label: "⛹️ Membership Services" },
+  { value: "Planning 📊", label: "📊 Planning" },
+  { value: "Public Works 🚏", label: "🚏 Public Works" },
+  { value: "Social Services 🧑‍🧑‍🧒‍🧒", label: "🧑‍🧑‍🧒‍🧒 Social Services" },
+  { value: "Tribal Council 🗳️", label: "🗳️ Tribal Council" },
+  { value: "Tribal Court 👩‍⚖️", label: "👩‍⚖️ Tribal Court" },
+  { value: "Tribal Police 👮‍♀️", label: "👮 Tribal Police" },
+  { value: "Other", label: "Other" },
+];
+
 const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
   const [hovered, setHovered] = useState(false);
+  const glowColor = hoverGlow || NHBP.turquoise;
   return (
     <div
       onClick={onClick}
@@ -55,16 +96,16 @@ const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
       onMouseLeave={() => setHovered(false)}
       style={{
         background: active
-          ? `linear-gradient(135deg, ${NHBP.turquoise}18, ${NHBP.turquoise}08)`
+          ? `linear-gradient(135deg, ${glowColor}18, ${glowColor}08)`
           : "rgba(255,255,255,0.03)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
-        border: `1px solid ${active ? NHBP.turquoise + "60" : hovered ? NHBP.turquoise + "30" : "rgba(255,255,255,0.06)"}`,
+        border: `1px solid ${active ? glowColor + "60" : hovered && onClick ? glowColor + "30" : "rgba(255,255,255,0.06)"}`,
         borderRadius: 16,
         transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
         cursor: onClick ? "pointer" : "default",
         boxShadow: active
-          ? `0 0 30px ${NHBP.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.08)`
+          ? `0 0 30px ${glowColor}25, inset 0 1px 0 rgba(255,255,255,0.08)`
           : hovered
           ? `0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)`
           : `inset 0 1px 0 rgba(255,255,255,0.04)`,
@@ -77,7 +118,7 @@ const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
       <div style={{
         position: "absolute",
         top: 0, left: 0, right: 0, height: 1,
-        background: `linear-gradient(90deg, transparent, ${active ? NHBP.turquoise + "40" : "rgba(255,255,255,0.08)"}, transparent)`,
+        background: `linear-gradient(90deg, transparent, ${active ? glowColor + "40" : "rgba(255,255,255,0.08)"}, transparent)`,
       }} />
       {children}
     </div>
@@ -437,28 +478,6 @@ const VD_PRIORITIES = [
   { id: "urgent", label: "Urgent", desc: "Within 5 business days", color: NHBP.red },
 ];
 
-// ─── GLASS CARD ─────────────────────────────────────────
-const Glass = ({ children, active, onClick, style = {}, hoverGlow }) => {
-  const [h, setH] = useState(false);
-  const glowColor = hoverGlow || NHBP.turquoise;
-  return (
-    <div onClick={onClick}
-      onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-      style={{
-        background: active ? `${glowColor}14` : "rgba(255,255,255,0.025)",
-        backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-        border: `1px solid ${active ? glowColor + "55" : h && onClick ? glowColor + "25" : "rgba(255,255,255,0.06)"}`,
-        borderRadius: 14, transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
-        cursor: onClick ? "pointer" : "default",
-        boxShadow: active ? `0 0 28px ${glowColor}25, inset 0 1px 0 rgba(255,255,255,0.08)` : h && onClick ? `0 6px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)` : `inset 0 1px 0 rgba(255,255,255,0.03)`,
-        transform: h && onClick ? "translateY(-1px)" : "none",
-        position: "relative", overflow: "hidden", ...style,
-      }}>
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${active ? glowColor + "35" : "rgba(255,255,255,0.06)"}, transparent)`, pointerEvents: "none" }} />
-      {children}
-    </div>
-  );
-};
 
 // ─── SECTION CARD (content step green→pink glow) ────────
 const SectionCard = ({ icon, title, subtitle, children, isDone }) => {
@@ -697,11 +716,11 @@ function VisualDesignForm({ onBackToPortal }) {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", zIndex: 1 }}>
           <div style={{ width: 76, height: 76, borderRadius: "50%", background: `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, color: "#fff", marginBottom: 24, boxShadow: `0 0 50px ${NHBP.turquoiseGlow}` }}>✓</div>
           <h1 style={{ fontSize: 30, fontWeight: 300, margin: "0 0 16px" }}>Request submitted!</h1>
-          <Glass style={{ padding: "12px 28px", marginBottom: 20 }}>
+          <GlassCard style={{ padding: "12px 28px", marginBottom: 20 }}>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.15em", display: "block" }}>{form.pieceType === "special-request" ? "Special Request" : "Visual Design Request"}</span>
             <span style={{ fontSize: 22, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "monospace" }}>{ticket}</span>
-          </Glass>
-          <Glass style={{ padding: "18px 24px", maxWidth: 440, width: "100%", textAlign: "left" }}>
+          </GlassCard>
+          <GlassCard style={{ padding: "18px 24px", maxWidth: 440, width: "100%", textAlign: "left" }}>
             {form.pieceType === "special-request" ? (
               <>
                 {[
@@ -752,7 +771,7 @@ function VisualDesignForm({ onBackToPortal }) {
             ))}
             </>
             )}
-          </Glass>
+          </GlassCard>
           <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginTop: 20, lineHeight: 1.6, maxWidth: 360 }}>
             The Communications team will review your request and follow up within 24 hours.
           </p>
@@ -781,7 +800,7 @@ function VisualDesignForm({ onBackToPortal }) {
             <Hint>Choose the type of piece you need designed</Hint>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
               {PIECE_TYPES.map(p => (
-                <Glass key={p.id} active={form.pieceType === p.id}
+                <GlassCard key={p.id} active={form.pieceType === p.id}
                   onClick={() => {
                     set("pieceType", p.id); set("size", null);
                     // Auto-set format and skip format step for certain types
@@ -806,7 +825,7 @@ function VisualDesignForm({ onBackToPortal }) {
                   <span style={{ fontSize: 26, display: "block", marginBottom: 6, filter: form.pieceType === p.id ? `drop-shadow(0 0 6px ${NHBP.turquoiseGlow})` : "none" }}>{p.icon}</span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "block" }}>{p.label}</span>
                   <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", lineHeight: 1.4 }}>{p.desc}</span>
-                </Glass>
+                </GlassCard>
               ))}
             </div>
           </div>
@@ -821,13 +840,13 @@ function VisualDesignForm({ onBackToPortal }) {
             <Hint>This determines sizing options and production needs</Hint>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, maxWidth: 520 }}>
               {FORMAT_OPTIONS.map(f => (
-                <Glass key={f.id} active={form.format === f.id}
+                <GlassCard key={f.id} active={form.format === f.id}
                   onClick={() => { set("format", f.id); set("size", null); setTimeout(goNext, 350); }}
                   style={{ padding: "22px 16px", textAlign: "center" }}>
                   <span style={{ fontSize: 28, display: "block", marginBottom: 8 }}>{f.icon}</span>
                   <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)", display: "block" }}>{f.label}</span>
                   <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>{f.desc}</span>
-                </Glass>
+                </GlassCard>
               ))}
             </div>
             {(form.format === "print" || form.format === "both") && (
@@ -835,11 +854,11 @@ function VisualDesignForm({ onBackToPortal }) {
                 <Hint>Do you need us to handle printing too?</Hint>
                 <div style={{ display: "flex", gap: 10 }}>
                   {[{ id: true, label: "Yes, handle printing" }, { id: false, label: "Just design files" }].map(o => (
-                    <Glass key={String(o.id)} active={form.needPrinting === o.id}
+                    <GlassCard key={String(o.id)} active={form.needPrinting === o.id}
                       onClick={() => set("needPrinting", o.id)}
                       style={{ padding: "12px 20px" }}>
                       <span style={{ fontSize: 13, color: form.needPrinting === o.id ? NHBP.turquoiseLight : "rgba(255,255,255,0.6)" }}>{o.label}</span>
-                    </Glass>
+                    </GlassCard>
                   ))}
                 </div>
               </div>
@@ -863,7 +882,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>{cat.cat}</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                       {cat.sizes.map(s => (
-                        <Glass key={s.id} active={form.size === s.id}
+                        <GlassCard key={s.id} active={form.size === s.id}
                           onClick={() => { set("size", s.id); set("multiPage", false); set("specialRequest", false); }}
                           style={{ padding: "12px 14px", display: "flex", flexDirection: "column", alignItems: "center", minWidth: 90 }}>
                           <div style={{
@@ -875,7 +894,7 @@ function VisualDesignForm({ onBackToPortal }) {
                           }} />
                           <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.8)", textAlign: "center" }}>{s.label}</span>
                           <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>{s.desc}</span>
-                        </Glass>
+                        </GlassCard>
                       ))}
                     </div>
                   </div>
@@ -883,12 +902,12 @@ function VisualDesignForm({ onBackToPortal }) {
 
                 {/* Custom size */}
                 <div style={{ marginBottom: 18 }}>
-                  <Glass active={form.size === "custom"}
+                  <GlassCard active={form.size === "custom"}
                     onClick={() => { set("size", "custom"); set("multiPage", false); set("specialRequest", false); }}
                     style={{ padding: "12px 16px", display: "inline-flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 16 }}>📐</span>
                     <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>Custom Size</span>
-                  </Glass>
+                  </GlassCard>
                   {form.size === "custom" && (
                     <div style={{ marginTop: 10, animation: "fadeSlide 0.3s ease" }}>
                       <input ref={inputRef} placeholder='Describe the size (e.g. "24 × 36 inches")'
@@ -948,11 +967,11 @@ function VisualDesignForm({ onBackToPortal }) {
                             { id: "catalog", label: "Catalog" },
                             { id: "other-mp", label: "Other" },
                           ].map(t => (
-                            <Glass key={t.id} active={form.multiPageType === t.id}
+                            <GlassCard key={t.id} active={form.multiPageType === t.id}
                               onClick={() => set("multiPageType", t.id)}
                               style={{ padding: "8px 14px" }}>
                               <span style={{ fontSize: 12, color: form.multiPageType === t.id ? NHBP.turquoiseLight : "rgba(255,255,255,0.5)" }}>{t.label}</span>
-                            </Glass>
+                            </GlassCard>
                           ))}
                         </div>
                       </div>
@@ -1105,7 +1124,7 @@ function VisualDesignForm({ onBackToPortal }) {
             <Hint>Select a size — the shapes show actual proportions</Hint>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 14, alignItems: "flex-end" }}>
               {sizes.map(s => (
-                <Glass key={s.id} active={form.size === s.id}
+                <GlassCard key={s.id} active={form.size === s.id}
                   onClick={() => { set("size", s.id); if (s.id !== "custom") setTimeout(goNext, 400); }}
                   style={{ padding: "14px 16px", display: "flex", flexDirection: "column", alignItems: "center", minWidth: 100 }}>
                   <div style={{
@@ -1122,7 +1141,7 @@ function VisualDesignForm({ onBackToPortal }) {
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.8)", textAlign: "center" }}>{s.label}</span>
                   <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textAlign: "center" }}>{s.desc}</span>
-                </Glass>
+                </GlassCard>
               ))}
             </div>
             {form.size === "custom" && (
@@ -1146,12 +1165,12 @@ function VisualDesignForm({ onBackToPortal }) {
             <Hint>Helps our designers understand context before they start</Hint>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 10, maxWidth: 540 }}>
               {PURPOSES.map(p => (
-                <Glass key={p.id} active={form.purpose === p.id}
+                <GlassCard key={p.id} active={form.purpose === p.id}
                   onClick={() => { set("purpose", p.id); setTimeout(goNext, 350); }}
                   style={{ padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 20 }}>{p.icon}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.8)" }}>{p.label}</span>
-                </Glass>
+                </GlassCard>
               ))}
             </div>
           </div>
@@ -1184,7 +1203,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     {sectionStyles.map(s => {
                       const isActive = form.styleDir === s.id && !form.designerChoice;
                       return (
-                        <Glass key={s.id} active={isActive}
+                        <GlassCard key={s.id} active={isActive}
                           onClick={() => { set("styleDir", s.id); set("designerChoice", false); }}
                           hoverGlow={s.palette[0]}
                           style={{ padding: 0, overflow: "hidden", opacity: form.designerChoice ? 0.4 : 1, transition: "all 0.3s ease" }}>
@@ -1244,7 +1263,7 @@ function VisualDesignForm({ onBackToPortal }) {
                               ))}
                             </div>
                           </div>
-                        </Glass>
+                        </GlassCard>
                       );
                     })}
                   </div>
@@ -1259,7 +1278,7 @@ function VisualDesignForm({ onBackToPortal }) {
                 <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Or...</span>
                 <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.06)" }} />
               </div>
-              <Glass active={form.designerChoice}
+              <GlassCard active={form.designerChoice}
                 onClick={() => { set("designerChoice", !form.designerChoice); if (!form.designerChoice) set("styleDir", null); }}
                 style={{ padding: "16px 20px", display: "flex", alignItems: "center", gap: 14, maxWidth: 520 }}>
                 <div style={{
@@ -1274,7 +1293,7 @@ function VisualDesignForm({ onBackToPortal }) {
                   <div style={{ fontSize: 14, fontWeight: 600, color: form.designerChoice ? "#fff" : "rgba(255,255,255,0.8)" }}>Complete Designer Control</div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", lineHeight: 1.4, marginTop: 2 }}>Skip the style selection — let our designer choose the best direction based on your content and purpose</div>
                 </div>
-              </Glass>
+              </GlassCard>
             </div>
 
             {/* ── COLOR PALETTE MODIFIER (only if a style is selected) ── */}
@@ -1290,7 +1309,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     {PALETTE_MODIFIERS.map(pm => {
                       const isActive = form.paletteModifier === pm.id;
                       return (
-                        <Glass key={pm.id} active={isActive}
+                        <GlassCard key={pm.id} active={isActive}
                           onClick={() => set("paletteModifier", pm.id)}
                           style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
                           <span style={{ fontSize: 18, flexShrink: 0 }}>{pm.icon}</span>
@@ -1305,7 +1324,7 @@ function VisualDesignForm({ onBackToPortal }) {
                               ))}
                             </div>
                           )}
-                        </Glass>
+                        </GlassCard>
                       );
                     })}
                   </div>
@@ -1698,12 +1717,12 @@ function VisualDesignForm({ onBackToPortal }) {
             <StepLabel n={7} />
             <Q>Any inspiration or references?</Q>
             <Hint>Screenshots, links, examples — anything that helps us understand your vision</Hint>
-            <Glass style={{ padding: "32px 24px", textAlign: "center", borderStyle: "dashed", maxWidth: 480, marginBottom: 16 }}>
+            <GlassCard style={{ padding: "32px 24px", textAlign: "center", borderStyle: "dashed", maxWidth: 480, marginBottom: 16 }}>
               <span style={{ fontSize: 32, display: "block", marginBottom: 8 }}>📎</span>
               <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>Drop images or screenshots here</span>
               <br />
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>PNG, JPG, PDF up to 10MB each</span>
-            </Glass>
+            </GlassCard>
             <textarea ref={inputRef} placeholder="Or describe what you're envisioning... paste links, mention designs you've seen, anything."
               value={form.notes} onChange={e => set("notes", e.target.value)}
               style={{
@@ -1726,7 +1745,7 @@ function VisualDesignForm({ onBackToPortal }) {
             <Hint>Helps us prioritize across all department requests</Hint>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 440, marginBottom: 20 }}>
               {VD_PRIORITIES.map(p => (
-                <Glass key={p.id} active={form.priority === p.id}
+                <GlassCard key={p.id} active={form.priority === p.id}
                   onClick={() => set("priority", p.id)}
                   hoverGlow={p.color}
                   style={{
@@ -1739,15 +1758,15 @@ function VisualDesignForm({ onBackToPortal }) {
                     <div style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.85)" }}>{p.label}</div>
                     <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 2 }}>{p.desc}</div>
                   </div>
-                </Glass>
+                </GlassCard>
               ))}
             </div>
             {form.priority === "urgent" && (
-              <Glass style={{ padding: "14px 18px", maxWidth: 440, borderColor: NHBP.red + "25", animation: "fadeSlide 0.3s ease" }}>
+              <GlassCard style={{ padding: "14px 18px", maxWidth: 440, borderColor: NHBP.red + "25", animation: "fadeSlide 0.3s ease" }}>
                 <p style={{ fontSize: 12, color: NHBP.pink, lineHeight: 1.6, margin: 0 }}>
                   ⚡ Urgent requests may require Director approval and are subject to current workload. We'll confirm feasibility within 4 hours.
                 </p>
-              </Glass>
+              </GlassCard>
             )}
             <div style={{ marginTop: 16 }}>
               <Hint>Have a specific date in mind? (optional)</Hint>
@@ -1767,7 +1786,7 @@ function VisualDesignForm({ onBackToPortal }) {
             <StepLabel n={9} />
             <Q>Review your request</Q>
             <Hint>Make sure everything looks right before submitting</Hint>
-            <Glass style={{ padding: "22px 26px", maxWidth: 520 }}>
+            <GlassCard style={{ padding: "22px 26px", maxWidth: 520 }}>
               {/* Type + Format row */}
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
                 <div>
@@ -1860,7 +1879,7 @@ function VisualDesignForm({ onBackToPortal }) {
                   </div>
                 )}
               </div>
-            </Glass>
+            </GlassCard>
           </div>
         );
       }
@@ -2504,47 +2523,7 @@ function StationeryKitForm({ onBackToPortal }) {
 //  EMPLOYEE HEADSHOTS FORM
 // ===========================================================
 function EmployeeHeadshotsForm({ onBackToPortal }) {
-  // ── Local constants ──
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
-
   const BOOKINGS_URL = "https://outlook.office.com/book/Headshots@nhbp-nsn.gov";
-
-  const HS_DEPTS = [
-    { value: "Administration", label: "Administration" },
-    { value: "Bkedé O Mshiké 🐢", label: "🐢 Bkedé O Mshiké" },
-    { value: "Communications 📰", label: "📰 Communications" },
-    { value: "Culture 🪶", label: "🪶 Culture" },
-    { value: "Enrollment", label: "Enrollment" },
-    { value: "Environmental 🌍", label: "🌍 Environmental" },
-    { value: "Finance", label: "Finance" },
-    { value: "Gaming Commission 🎰", label: "🎰 Gaming Commission" },
-    { value: "Government Records 🗃️", label: "🗃️ Government Records" },
-    { value: "Health and Human Services 🥼", label: "🥼 Health & Human Services" },
-    { value: "Housing 🏡", label: "🏡 Housing" },
-    { value: "Human Resources 💼", label: "💼 Human Resources" },
-    { value: "Information Technology 🧑‍💻", label: "🧑‍💻 Information Technology" },
-    { value: "Legal 👩‍💼", label: "👩‍💼 Legal" },
-    { value: "Membership Services ⛹️‍♂️", label: "⛹️ Membership Services" },
-    { value: "Planning 📊", label: "📊 Planning" },
-    { value: "Public Works 🚏", label: "🚏 Public Works" },
-    { value: "Social Services 🧑‍🧑‍🧒‍🧒", label: "🧑‍🧑‍🧒‍🧒 Social Services" },
-    { value: "Tribal Council 🗳️", label: "🗳️ Tribal Council" },
-    { value: "Tribal Court 👩‍⚖️", label: "👩‍⚖️ Tribal Court" },
-    { value: "Tribal Police 👮‍♀️", label: "👮 Tribal Police" },
-    { value: "Other", label: "Other" },
-  ];
 
   const HEADSHOT_TYPES = [
     { id: "new", icon: "📸", label: "New Headshot", desc: "First time or brand new photo" },
@@ -2600,7 +2579,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
       <select value={value} onChange={(e) => onChange(e.target.value)}
         style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
         <option value="" style={{ background: C.dark }}>Select department...</option>
-        {HS_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
+        {FORM_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
       </select>
     </div>
   );
@@ -2878,47 +2857,6 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 //  INSTANT ALERT FORM
 // ===========================================================
 function InstantAlertForm({ onBackToPortal }) {
-  // ── Local constants ──
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    red: "#ba0c2f", redLight: "#e02040",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
-
-  const IA_DEPTS = [
-    { value: "Administration", label: "Administration" },
-    { value: "Bkedé O Mshiké 🐢", label: "🐢 Bkedé O Mshiké" },
-    { value: "Communications 📰", label: "📰 Communications" },
-    { value: "Culture 🪶", label: "🪶 Culture" },
-    { value: "Enrollment", label: "Enrollment" },
-    { value: "Environmental 🌍", label: "🌍 Environmental" },
-    { value: "Finance", label: "Finance" },
-    { value: "Gaming Commission 🎰", label: "🎰 Gaming Commission" },
-    { value: "Government Records 🗃️", label: "🗃️ Government Records" },
-    { value: "Health and Human Services 🥼", label: "🥼 Health & Human Services" },
-    { value: "Housing 🏡", label: "🏡 Housing" },
-    { value: "Human Resources 💼", label: "💼 Human Resources" },
-    { value: "Information Technology 🧑‍💻", label: "🧑‍💻 Information Technology" },
-    { value: "Legal 👩‍💼", label: "👩‍💼 Legal" },
-    { value: "Membership Services ⛹️‍♂️", label: "⛹️ Membership Services" },
-    { value: "Planning 📊", label: "📊 Planning" },
-    { value: "Public Works 🚏", label: "🚏 Public Works" },
-    { value: "Social Services 🧑‍🧑‍🧒‍🧒", label: "🧑‍🧑‍🧒‍🧒 Social Services" },
-    { value: "Tribal Council 🗳️", label: "🗳️ Tribal Council" },
-    { value: "Tribal Court 👩‍⚖️", label: "👩‍⚖️ Tribal Court" },
-    { value: "Tribal Police 👮‍♀️", label: "👮 Tribal Police" },
-    { value: "Other", label: "Other" },
-  ];
-
   const URGENCY_LEVELS = [
     { id: "emergency", icon: "🚨", label: "Emergency", desc: "Immediate — safety, closures, critical notices", color: C.red, glow: "rgba(186,12,47,0.3)" },
     { id: "urgent", icon: "⚡", label: "Urgent", desc: "Same day — time-sensitive announcements", color: "#f59e0b", glow: "rgba(245,158,11,0.3)" },
@@ -2986,7 +2924,7 @@ function InstantAlertForm({ onBackToPortal }) {
       <select value={value} onChange={(e) => onChange(e.target.value)}
         style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
         <option value="" style={{ background: C.dark }}>Select department...</option>
-        {IA_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
+        {FORM_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
       </select>
     </div>
   );
@@ -3250,20 +3188,6 @@ function InstantAlertForm({ onBackToPortal }) {
 function TurtlePressForm({ onBackToPortal }) {
   const [subView, setSubView] = useState("menu"); // "menu" | "submission" | "article" | "feedback"
 
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
-
   const TpGlassCard = ({ children, active, onClick, style: s = {} }) => {
     const [h, setH] = useState(false);
     return (
@@ -3342,20 +3266,6 @@ function TurtlePressForm({ onBackToPortal }) {
 
 // ── QTP FEEDBACK SUB-FORM ──────────────────
 function QTPFeedbackSubForm({ onBack }) {
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
-
   const FEEDBACK_TYPES = [
     { id: "correction", icon: "✏️", label: "Correction", desc: "Something needs to be fixed" },
     { id: "compliment", icon: "⭐", label: "Compliment", desc: "Something we did well" },
@@ -3716,20 +3626,6 @@ function QTPFeedbackSubForm({ onBack }) {
 //  QTP SUBMISSION SUB-FORM (Celebrations & Photos)
 // ===========================================================
 function QTPSubmissionSubForm({ onBack }) {
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
-
   const SUBMISSION_TYPES = [
     { id: "birthday", icon: "🎂", label: "Birthday", desc: "Celebrate a tribal member's birthday" },
     { id: "anniversary", icon: "💍", label: "Anniversary", desc: "Honor a couple's milestone" },
@@ -4192,44 +4088,6 @@ function QTPSubmissionSubForm({ onBack }) {
 //  QTP ARTICLE / STORY SUB-FORM
 // ===========================================================
 function QTPArticleSubForm({ onBack }) {
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
-
-  const AR_DEPTS = [
-    { value: "Administration", label: "Administration" },
-    { value: "Bkedé O Mshiké 🐢", label: "🐢 Bkedé O Mshiké" },
-    { value: "Communications 📰", label: "📰 Communications" },
-    { value: "Culture 🪶", label: "🪶 Culture" },
-    { value: "Enrollment", label: "Enrollment" },
-    { value: "Environmental 🌍", label: "🌍 Environmental" },
-    { value: "Finance", label: "Finance" },
-    { value: "Gaming Commission 🎰", label: "🎰 Gaming Commission" },
-    { value: "Government Records 🗃️", label: "🗃️ Government Records" },
-    { value: "Health and Human Services 🥼", label: "🥼 Health & Human Services" },
-    { value: "Housing 🏡", label: "🏡 Housing" },
-    { value: "Human Resources 💼", label: "💼 Human Resources" },
-    { value: "Information Technology 🧑‍💻", label: "🧑‍💻 Information Technology" },
-    { value: "Legal 👩‍💼", label: "👩‍💼 Legal" },
-    { value: "Membership Services ⛹️‍♂️", label: "⛹️ Membership Services" },
-    { value: "Planning 📊", label: "📊 Planning" },
-    { value: "Public Works 🚏", label: "🚏 Public Works" },
-    { value: "Social Services 🧑‍🧑‍🧒‍🧒", label: "🧑‍🧑‍🧒‍🧒 Social Services" },
-    { value: "Tribal Council 🗳️", label: "🗳️ Tribal Council" },
-    { value: "Tribal Court 👩‍⚖️", label: "👩‍⚖️ Tribal Court" },
-    { value: "Tribal Police 👮‍♀️", label: "👮 Tribal Police" },
-    { value: "Other", label: "Other" },
-  ];
 
   const COMMITTEES = [
     "Cemetery & Parks Committee", "Cultural Committee", "Education Committee",
@@ -4322,7 +4180,7 @@ function QTPArticleSubForm({ onBack }) {
       <select value={value} onChange={(e) => onChange(e.target.value)}
         style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
         <option value="" style={{ background: C.dark }}>Select department...</option>
-        {AR_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
+        {FORM_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
       </select>
     </div>
   );
@@ -4713,44 +4571,6 @@ function QTPArticleSubForm({ onBack }) {
 //  GENERAL / OTHER REQUEST FORM
 // ===========================================================
 function GeneralRequestForm({ onBackToPortal }) {
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
-
-  const GR_DEPTS = [
-    { value: "Administration", label: "Administration" },
-    { value: "Bkedé O Mshiké 🐢", label: "🐢 Bkedé O Mshiké" },
-    { value: "Communications 📰", label: "📰 Communications" },
-    { value: "Culture 🪶", label: "🪶 Culture" },
-    { value: "Enrollment", label: "Enrollment" },
-    { value: "Environmental 🌍", label: "🌍 Environmental" },
-    { value: "Finance", label: "Finance" },
-    { value: "Gaming Commission 🎰", label: "🎰 Gaming Commission" },
-    { value: "Government Records 🗃️", label: "🗃️ Government Records" },
-    { value: "Health and Human Services 🥼", label: "🥼 Health & Human Services" },
-    { value: "Housing 🏡", label: "🏡 Housing" },
-    { value: "Human Resources 💼", label: "💼 Human Resources" },
-    { value: "Information Technology 🧑‍💻", label: "🧑‍💻 Information Technology" },
-    { value: "Legal 👩‍💼", label: "👩‍💼 Legal" },
-    { value: "Membership Services ⛹️‍♂️", label: "⛹️ Membership Services" },
-    { value: "Planning 📊", label: "📊 Planning" },
-    { value: "Public Works 🚏", label: "🚏 Public Works" },
-    { value: "Social Services 🧑‍🧑‍🧒‍🧒", label: "🧑‍🧑‍🧒‍🧒 Social Services" },
-    { value: "Tribal Council 🗳️", label: "🗳️ Tribal Council" },
-    { value: "Tribal Court 👩‍⚖️", label: "👩‍⚖️ Tribal Court" },
-    { value: "Tribal Police 👮‍♀️", label: "👮 Tribal Police" },
-    { value: "Other", label: "Other" },
-  ];
 
   const REQUEST_AREAS = [
     { id: "design", icon: "🎨", label: "Design Related", desc: "Something design-adjacent" },
@@ -4819,7 +4639,7 @@ function GeneralRequestForm({ onBackToPortal }) {
       <select value={value} onChange={(e) => onChange(e.target.value)}
         style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
         <option value="" style={{ background: C.dark }}>Select department...</option>
-        {GR_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
+        {FORM_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
       </select>
     </div>
   );
