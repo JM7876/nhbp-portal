@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { NHBP, C, FORM_DEPTS } from "../constants";
 import { useDraftForm, generateTicket, createTrelloCard, trelloHeader, SubmissionStore } from "../utils";
+import { GlassCard } from "../components/GlassCard";
 
 export default function GeneralRequestForm({ onBackToPortal }) {
 

@@ -1455,8 +1455,4 @@ function QTPArticleSubForm({ onBack }) {
   );
 }
 
-// ===========================================================
-//  GENERAL / OTHER REQUEST FORM
-// ===========================================================
-
 export default TurtlePressForm;
