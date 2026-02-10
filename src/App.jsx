@@ -568,6 +568,32 @@ const trelloHeader = (ticket) => [
   "",
 ];
 
+// Auto-save form drafts to localStorage
+const useDraftForm = (key, initialState) => {
+  const storageKey = `nhbp_draft_${key}`;
+  const [form, setForm] = useState(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Merge with initial state to pick up any new fields
+        return { ...initialState, ...parsed };
+      }
+    } catch {}
+    return initialState;
+  });
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      localStorage.setItem(storageKey, JSON.stringify(form));
+    }, 400);
+    return () => clearTimeout(debounceRef.current);
+  }, [form, storageKey]);
+  const clearDraft = () => localStorage.removeItem(storageKey);
+  return [form, setForm, clearDraft];
+};
+
 const VD_PRIORITIES = [
   { id: "standard", label: "Standard", desc: "2–3 weeks", color: NHBP.turquoise },
   { id: "priority", label: "Priority", desc: "1–2 weeks", color: "#e0a630" },
@@ -618,7 +644,7 @@ function VisualDesignForm({ onBackToPortal }) {
   const [step, setStep] = useState(0);
   const [anim, setAnim] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-  const [form, setForm] = useState({
+  const [form, setForm, clearDraft] = useDraftForm("visual-design", {
     pieceType: null, format: null, size: null, customSize: "",
     multiPage: false, pageCount: "", multiPageType: null, specialRequest: false, specialRequestNote: "",
     gsrDescription: "", gsrName: "", gsrDepartment: "", gsrEmail: "", gsrDeadline: "",
@@ -697,6 +723,7 @@ function VisualDesignForm({ onBackToPortal }) {
           date: form.eventDate || form.date || "", time: form.eventTime || form.time || "",
           location: form.eventLocation || form.location || "",
         });
+        clearDraft();
         setSubmitted(true);
       }
       setAnim(false);
@@ -2284,7 +2311,7 @@ function StationeryKitForm({ onBackToPortal }) {
   const inputRef = useRef(null);
   const navLock = useRef(false);
 
-  const [form, setForm] = useState({
+  const [form, setForm, clearDraft] = useDraftForm("stationery-kit", {
     enterprise: null, items: [], reason: null,
     firstName: "", lastName: "", title: "", department: "",
     cellPhone: "", officePhone: "", fax: "", email: "",
@@ -2348,6 +2375,7 @@ function StationeryKitForm({ onBackToPortal }) {
       items: form.items, reason: form.reason, officeLocation: form.officeLocation,
       quantity: form.quantity, notes: form.notes,
     });
+    clearDraft();
     setSubmitted(true);
   };
 
@@ -2705,7 +2733,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
   const [submissionDate, setSubmissionDate] = useState(null);
   const inputRef = useRef(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm, clearDraft] = useDraftForm("studio-hub", {
     firstName: "", lastName: "", email: "", phone: "",
     department: "", title: "",
     headshotType: null, locationPref: null,
@@ -2739,6 +2767,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
       headshotType: form.headshotType, locationPref: form.locationPref,
       groupNames: form.groupNames, notes: form.notes,
     });
+    clearDraft();
     setSubmitted(true);
   };
 
@@ -3068,7 +3097,7 @@ function InstantAlertForm({ onBackToPortal }) {
   const [submissionDate, setSubmissionDate] = useState(null);
   const inputRef = useRef(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm, clearDraft] = useDraftForm("instant-alert", {
     firstName: "", lastName: "", email: "", phone: "",
     department: "", urgency: null, channels: {},
     subject: "", message: "",
@@ -3107,6 +3136,7 @@ function InstantAlertForm({ onBackToPortal }) {
       audience: form.audience, effectiveDate: form.effectiveDate,
       effectiveTime: form.effectiveTime, approvedBy: form.approvedBy,
     });
+    clearDraft();
     setSubmitted(true);
   };
 
@@ -3504,7 +3534,7 @@ function QTPFeedbackSubForm({ onBack }) {
   const [submissionDate, setSubmissionDate] = useState(null);
   const inputRef = useRef(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm, clearDraft] = useDraftForm("turtle-press-feedback", {
     firstName: "", lastName: "", tribalId: "",
     email: "", phone: "",
     edition: "", feedbackType: null,
@@ -3538,6 +3568,7 @@ function QTPFeedbackSubForm({ onBack }) {
       articleTitle: form.articleTitle, feedback: form.feedback,
       correctionDetails: form.correctionDetails,
     });
+    clearDraft();
     setSubmitted(true);
   };
 
@@ -3884,7 +3915,7 @@ function QTPSubmissionSubForm({ onBack }) {
   const [photoAgreed, setPhotoAgreed] = useState(false);
   const inputRef = useRef(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm, clearDraft] = useDraftForm("turtle-press-submission", {
     firstName: "", lastName: "", tribalId: "", identity: "",
     email: "", phone: "", submissionType: null,
     bdayFirstName: "", bdayLastName: "", birthDate: "",
@@ -3928,6 +3959,7 @@ function QTPSubmissionSubForm({ onBack }) {
       whyNewsworthy: form.whyNewsworthy, whenHappening: form.whenHappening,
       photoCredit: form.photoCredit, notes: form.additionalNotes,
     });
+    clearDraft();
     setSubmitted(true);
   };
 
@@ -4389,7 +4421,7 @@ function QTPArticleSubForm({ onBack }) {
   const [photoAgreed, setPhotoAgreed] = useState(false);
   const inputRef = useRef(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm, clearDraft] = useDraftForm("turtle-press-article", {
     firstName: "", lastName: "", tribalId: "", identity: "",
     email: "", phone: "",
     department: "", committee: "",
@@ -4438,6 +4470,7 @@ function QTPArticleSubForm({ onBack }) {
       whyNewsworthy: form.whyNewsworthy, whenHappening: form.whenHappening,
       photoCredit: form.photoCredit, notes: form.additionalNotes,
     });
+    clearDraft();
     setSubmitted(true);
   };
 
@@ -4871,7 +4904,7 @@ function GeneralRequestForm({ onBackToPortal }) {
   const [submissionDate, setSubmissionDate] = useState(null);
   const inputRef = useRef(null);
 
-  const [form, setForm] = useState({
+  const [form, setForm, clearDraft] = useDraftForm("general-request", {
     firstName: "", lastName: "", email: "", phone: "",
     department: "", area: null, priority: null,
     subject: "", description: "", deadline: "", notes: "",
@@ -4902,6 +4935,7 @@ function GeneralRequestForm({ onBackToPortal }) {
       priority: form.priority, subject: form.subject, description: form.description,
       deadline: form.deadline, notes: form.notes,
     });
+    clearDraft();
     setSubmitted(true);
   };
 
@@ -5463,7 +5497,7 @@ export default function NHBPPortal() {
   const [direction, setDirection] = useState(1);
   const [animating, setAnimating] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-  const [formData, setFormData] = useState({
+  const [formData, setFormData, clearMainDraft] = useDraftForm("main-form", {
     service: null, name: "", email: "", department: "",
     title: "", description: "", priority: null,
   });
@@ -5532,6 +5566,7 @@ export default function NHBPPortal() {
       department: formData.department, title: formData.title, description: formData.description,
       priority: formData.priority,
     });
+    clearMainDraft();
     setSubmitted(true);
   };
 
@@ -5604,6 +5639,7 @@ export default function NHBPPortal() {
     setScreen("welcome");
     setStep(0);
     setFormData({ service: null, name: "", email: "", department: "", title: "", description: "", priority: null });
+    clearMainDraft();
   };
 
   const BackToPortalButton = ({ onClick }) => (
