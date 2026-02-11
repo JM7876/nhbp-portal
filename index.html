@@ -1,12 +1,262 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="night">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NHBP Communications Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@200;300;400;500;600&display=swap" rel="stylesheet" />
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { background: #0a0e14; }
+      /* ═══════════════════════════════════════════════════════
+         NHBP DESIGN SYSTEM — CSS Custom Properties
+         ═══════════════════════════════════════════════════════ */
+
+      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+      /* ─── Brand Colors ─────────────────────────────────── */
+      :root {
+        --turquoise: rgb(20, 169, 162);
+        --pink: rgb(200, 80, 130);
+        --turquoise-glow: rgba(20,169,162,0.15);
+        --pink-glow: rgba(200,80,130,0.12);
+      }
+
+      /* ─── Typography ───────────────────────────────────── */
+      :root {
+        --font-primary: 'Raleway', -apple-system, BlinkMacSystemFont, sans-serif;
+        --text-hero: 28px;
+        --text-subtitle: 10px;
+        --text-body: 12px;
+        --text-label: 9px;
+        --text-badge: 7px;
+        --text-step: 9px;
+        --weight-thin: 200;
+        --weight-light: 300;
+        --weight-regular: 400;
+        --weight-medium: 500;
+        --weight-semibold: 600;
+        --text-primary: rgba(255,255,255,0.7);
+        --text-secondary: rgba(255,255,255,0.3);
+        --text-muted: rgba(255,255,255,0.15);
+        --text-accent: rgba(20,169,162,0.6);
+        --text-accent-bright: rgba(20,169,162,0.8);
+      }
+
+      /* ─── Glass Parameters ─────────────────────────────── */
+      :root {
+        --glass-blur: 20px;
+        --glass-saturation: 1.2;
+        --glass-brightness: 1.05;
+        --glass-bg-start: rgba(255,255,255,0.08);
+        --glass-bg-end: rgba(255,255,255,0.01);
+        --glass-border: rgba(255,255,255,0.12);
+        --glass-border-highlight: rgba(255,255,255,0.18);
+        --glass-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      }
+
+      /* ─── Night Mode (default) ─────────────────────────── */
+      :root, [data-theme="night"] {
+        --bg-base: #070a10;
+        --bg-gradient: none;
+        --ring-outer-opacity: 0.065;
+        --ring-mid-opacity: 0.075;
+        --ring-inner-opacity: 0.085;
+        --center-glow-opacity: 0.12;
+        --north-pull: rgba(255,255,255,0.035);
+        --east-pull: rgba(200,80,130,0.055);
+        --south-pull: rgba(200,80,130,0.04);
+        --west-pull: rgba(20,169,162,0.07);
+        --svg-brightness: 1;
+      }
+
+      /* ─── Day Mode (Teal Fog) ──────────────────────────── */
+      [data-theme="day"] {
+        --bg-base: transparent;
+        --bg-gradient: linear-gradient(160deg, #111a1a 0%, #0f181c 50%, #121b1a 100%);
+        --ring-outer-opacity: 0.08;
+        --ring-mid-opacity: 0.09;
+        --ring-inner-opacity: 0.1;
+        --center-glow-opacity: 0.14;
+        --north-pull: rgba(20,169,162,0.04);
+        --east-pull: rgba(20,169,162,0.05);
+        --south-pull: rgba(20,169,162,0.035);
+        --west-pull: rgba(20,169,162,0.06);
+        --svg-brightness: 1.1;
+      }
+
+      body {
+        background: var(--bg-base);
+        font-family: var(--font-primary);
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         CONCEPT E v2 — Shell Teachings Background
+         ═══════════════════════════════════════════════════════ */
+      .concept-e-bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background: var(--bg-gradient, none);
+        transition: background 0.6s ease;
+      }
+
+      .concept-e-bg::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          /* Three concentric medicine wheel rings */
+          radial-gradient(circle 380px at 50% 48%, rgba(20,169,162,0.0) 44.5%, rgba(20,169,162,var(--ring-outer-opacity)) 45.5%, rgba(20,169,162,0.0) 47%),
+          radial-gradient(circle 280px at 50% 48%, rgba(20,169,162,0.0) 44.5%, rgba(20,169,162,var(--ring-mid-opacity)) 45.5%, rgba(20,169,162,0.0) 47%),
+          radial-gradient(circle 180px at 50% 48%, rgba(20,169,162,0.0) 43.5%, rgba(20,169,162,var(--ring-inner-opacity)) 45.5%, rgba(20,169,162,0.0) 47%),
+          /* Center convergence glow */
+          radial-gradient(circle 70px at 50% 48%, rgba(20,169,162,var(--center-glow-opacity)) 0%, transparent 100%),
+          /* Four directional color pulls */
+          radial-gradient(ellipse 200px 500px at 50% 0%, var(--north-pull) 0%, transparent 70%),
+          radial-gradient(ellipse 500px 200px at 100% 48%, var(--east-pull) 0%, transparent 70%),
+          radial-gradient(ellipse 200px 500px at 50% 100%, var(--south-pull) 0%, transparent 70%),
+          radial-gradient(ellipse 500px 200px at 0% 48%, var(--west-pull) 0%, transparent 70%);
+        transition: background 0.6s ease;
+      }
+
+      /* Day mode ambient teal mist */
+      [data-theme="day"] .concept-e-bg::before {
+        background:
+          radial-gradient(circle 380px at 50% 48%, rgba(20,169,162,0.0) 44.5%, rgba(20,169,162,var(--ring-outer-opacity)) 45.5%, rgba(20,169,162,0.0) 47%),
+          radial-gradient(circle 280px at 50% 48%, rgba(20,169,162,0.0) 44.5%, rgba(20,169,162,var(--ring-mid-opacity)) 45.5%, rgba(20,169,162,0.0) 47%),
+          radial-gradient(circle 180px at 50% 48%, rgba(20,169,162,0.0) 43.5%, rgba(20,169,162,var(--ring-inner-opacity)) 45.5%, rgba(20,169,162,0.0) 47%),
+          radial-gradient(circle 70px at 50% 48%, rgba(20,169,162,var(--center-glow-opacity)) 0%, transparent 100%),
+          radial-gradient(ellipse 200px 500px at 50% 0%, var(--north-pull) 0%, transparent 70%),
+          radial-gradient(ellipse 500px 200px at 100% 48%, var(--east-pull) 0%, transparent 70%),
+          radial-gradient(ellipse 200px 500px at 50% 100%, var(--south-pull) 0%, transparent 70%),
+          radial-gradient(ellipse 500px 200px at 0% 48%, var(--west-pull) 0%, transparent 70%),
+          radial-gradient(ellipse 100% 100% at 50% 50%, rgba(20,169,162,0.03) 0%, transparent 65%);
+      }
+
+      .concept-e-bg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 800' preserveAspectRatio='xMidYMid slice'%3E%3C!-- Medicine wheel cross lines --%3E%3Cline x1='400' y1='0' x2='400' y2='800' stroke='rgba(20,169,162,0.055)' stroke-width='0.6'/%3E%3Cline x1='0' y1='400' x2='800' y2='400' stroke='rgba(20,169,162,0.055)' stroke-width='0.6'/%3E%3C!-- Eight sun rays from center --%3E%3Cline x1='400' y1='400' x2='258' y2='215' stroke='rgba(20,169,162,0.06)' stroke-width='0.5'/%3E%3Cline x1='400' y1='400' x2='542' y2='215' stroke='rgba(20,169,162,0.06)' stroke-width='0.5'/%3E%3Cline x1='400' y1='400' x2='542' y2='585' stroke='rgba(20,169,162,0.06)' stroke-width='0.5'/%3E%3Cline x1='400' y1='400' x2='258' y2='585' stroke='rgba(20,169,162,0.06)' stroke-width='0.5'/%3E%3Cline x1='400' y1='400' x2='190' y2='310' stroke='rgba(20,169,162,0.07)' stroke-width='0.5'/%3E%3Cline x1='400' y1='400' x2='610' y2='310' stroke='rgba(20,169,162,0.07)' stroke-width='0.5'/%3E%3Cline x1='400' y1='400' x2='610' y2='490' stroke='rgba(20,169,162,0.07)' stroke-width='0.5'/%3E%3Cline x1='400' y1='400' x2='190' y2='490' stroke='rgba(20,169,162,0.07)' stroke-width='0.5'/%3E%3C!-- Cardinal applique triangles --%3E%3Cpolygon points='150,390 150,410 125,400' fill='rgba(20,169,162,0.06)'/%3E%3Cpolygon points='390,150 410,150 400,125' fill='rgba(20,169,162,0.06)'/%3E%3Cpolygon points='650,390 650,410 675,400' fill='rgba(20,169,162,0.06)'/%3E%3Cpolygon points='390,650 410,650 400,675' fill='rgba(20,169,162,0.06)'/%3E%3C!-- Diagonal applique triangles --%3E%3Cpolygon points='258,215 268,208 265,222' fill='rgba(200,80,130,0.05)'/%3E%3Cpolygon points='542,215 532,208 535,222' fill='rgba(200,80,130,0.05)'/%3E%3Cpolygon points='542,585 532,592 535,578' fill='rgba(20,169,162,0.05)'/%3E%3Cpolygon points='258,585 268,592 265,578' fill='rgba(20,169,162,0.05)'/%3E%3C!-- Seven Grandfather Teaching circles with halos --%3E%3C!-- Center --%3E%3Ccircle cx='400' cy='400' r='14' fill='none' stroke='rgba(20,169,162,0.06)' stroke-width='0.5'/%3E%3Ccircle cx='400' cy='400' r='7' fill='rgba(20,169,162,0.12)'/%3E%3C!-- North (top) --%3E%3Ccircle cx='400' cy='255' r='13' fill='none' stroke='rgba(20,169,162,0.05)' stroke-width='0.5'/%3E%3Ccircle cx='400' cy='255' r='7' fill='rgba(20,169,162,0.1)'/%3E%3C!-- Upper-right (NE) --%3E%3Ccircle cx='525' cy='328' r='12' fill='none' stroke='rgba(20,169,162,0.05)' stroke-width='0.5'/%3E%3Ccircle cx='525' cy='328' r='7' fill='rgba(20,169,162,0.1)'/%3E%3C!-- Lower-right (SE) — pink --%3E%3Ccircle cx='525' cy='472' r='12' fill='none' stroke='rgba(200,80,130,0.05)' stroke-width='0.5'/%3E%3Ccircle cx='525' cy='472' r='7' fill='rgba(200,80,130,0.1)'/%3E%3C!-- Bottom (S) --%3E%3Ccircle cx='400' cy='545' r='13' fill='none' stroke='rgba(20,169,162,0.05)' stroke-width='0.5'/%3E%3Ccircle cx='400' cy='545' r='7' fill='rgba(20,169,162,0.1)'/%3E%3C!-- Lower-left (SW) — pink --%3E%3Ccircle cx='275' cy='472' r='12' fill='none' stroke='rgba(200,80,130,0.05)' stroke-width='0.5'/%3E%3Ccircle cx='275' cy='472' r='7' fill='rgba(200,80,130,0.1)'/%3E%3C!-- Upper-left (NW) --%3E%3Ccircle cx='275' cy='328' r='12' fill='none' stroke='rgba(20,169,162,0.05)' stroke-width='0.5'/%3E%3Ccircle cx='275' cy='328' r='7' fill='rgba(20,169,162,0.1)'/%3E%3C/svg%3E");
+        background-size: cover;
+        background-position: center;
+        filter: brightness(var(--svg-brightness, 1));
+        transition: filter 0.6s ease;
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         GLASS TREATMENTS
+         ═══════════════════════════════════════════════════════ */
+
+      .glass-full {
+        backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(var(--glass-brightness));
+        -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation)) brightness(var(--glass-brightness));
+        background: linear-gradient(145deg, var(--glass-bg-start) 0%, rgba(255,255,255,0.02) 50%, var(--glass-bg-end) 100%);
+        border: 1px solid var(--glass-border);
+        border-top-color: var(--glass-border-highlight);
+        border-left-color: rgba(255,255,255,0.14);
+        box-shadow:
+          var(--glass-shadow),
+          inset 0 1px 0 rgba(255,255,255,0.08),
+          inset 1px 0 0 rgba(255,255,255,0.04);
+      }
+
+      .glass-simple {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+      }
+
+      .glass-interactive {
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .glass-interactive:active,
+      .glass-interactive.active {
+        border-color: rgba(200,80,130,0.25);
+        box-shadow:
+          0 8px 32px rgba(0,0,0,0.25),
+          0 0 20px rgba(200,80,130,0.1);
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         GLOBAL KEYFRAMES
+         ═══════════════════════════════════════════════════════ */
+
+      @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+      }
+
+      @keyframes fadeSlide {
+        from { opacity: 0; transform: translateY(18px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @keyframes pulseGlow {
+        0%, 100% { opacity: 0.4; }
+        50% { opacity: 1; }
+      }
+
+      @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        50%, 100% { transform: translateX(100%); }
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.3; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.3); }
+      }
+
+      @keyframes float1 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(-30px, 20px) scale(1.1); }
+      }
+
+      @keyframes float2 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(20px, -25px) scale(1.05); }
+      }
+
+      @keyframes float3 {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(-15px, -20px) scale(1.15); }
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         GLOBAL ELEMENT STYLES
+         ═══════════════════════════════════════════════════════ */
+
+      input:focus, textarea:focus {
+        border-color: rgb(20, 169, 162) !important;
+      }
+
+      input::placeholder, textarea::placeholder {
+        color: rgba(255,255,255,0.2);
+      }
+
+      ::selection {
+        background: rgba(20,169,162,0.25);
+      }
+
+      .style-grid::-webkit-scrollbar { display: none; }
+
+      *, *::before, *::after {
+        direction: ltr;
+        unicode-bidi: normal;
+      }
+
+      input, textarea, select {
+        direction: ltr !important;
+        text-align: left !important;
+        unicode-bidi: plaintext !important;
+      }
     </style>
   </head>
   <body>
