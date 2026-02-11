@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 const NHBP = {
   turquoise: "#14A9A2",
@@ -83,6 +83,150 @@ const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
     </div>
   );
 };
+
+// ═══════════════════════════════════════════════════════════
+//  SHARED FORM COLORS (used by all sub-form components)
+// ═══════════════════════════════════════════════════════════
+
+const FC = {
+  dark: "#0a0e14", darkCard: "#111820",
+  turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
+  turquoiseGlow: "rgba(64, 181, 173, 0.3)",
+  maroon: "#6b2737", maroonLight: "#8a3a4d",
+  gold: "#c9a84c", goldLight: "#e0c76e",
+  green: "#2d6a4f", greenLight: "#40916c",
+  red: "#ba0c2f", redLight: "#e02040",
+  textPrimary: "rgba(255,255,255,0.92)",
+  textSecondary: "rgba(255,255,255,0.55)",
+  textDim: "rgba(255,255,255,0.3)",
+  border: "rgba(255,255,255,0.08)",
+  glass: "rgba(255,255,255,0.03)",
+};
+
+// ═══════════════════════════════════════════════════════════
+//  GENERIC MODULE-SCOPE FORM COMPONENTS
+// ═══════════════════════════════════════════════════════════
+
+const FormGlassCard = ({ children, active, onClick, style: s = {}, glowColor }) => {
+  const [h, setH] = useState(false);
+  const gc = glowColor || FC.turquoise;
+  const gcGlow = glowColor ? `${glowColor}30` : FC.turquoiseGlow;
+  return (
+    <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+      style={{
+        background: active ? `linear-gradient(135deg, ${gc}18, ${gc}08)` : h ? "rgba(255,255,255,0.04)" : FC.glass,
+        border: `1px solid ${active ? gc + "50" : h ? "rgba(255,255,255,0.12)" : FC.border}`,
+        borderRadius: 14, padding: "16px 20px", cursor: onClick ? "pointer" : "default",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        boxShadow: active ? `0 8px 32px ${gcGlow}, inset 0 1px 0 rgba(255,255,255,0.06)` : h ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
+        transform: h && onClick ? "translateY(-1px)" : "translateY(0)",
+        position: "relative", overflow: "hidden", ...s,
+      }}>
+      {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${gc}60, transparent)` }} />}
+      {children}
+    </div>
+  );
+};
+
+const FormInput = ({ label, value, onChange, placeholder, type = "text", required, inputRef: ref, onKeyDown, multiline, maxWords }) => {
+  const wc = multiline && maxWords ? value.trim().split(/\s+/).filter(Boolean).length : 0;
+  return (
+    <div style={{ marginBottom: 20, flex: 1 }}>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: FC.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+        {label} {required && <span style={{ color: FC.turquoise }}>*</span>}
+      </label>
+      {multiline ? (
+        <div style={{ position: "relative" }}>
+          <textarea ref={ref} value={value} rows={4} placeholder={placeholder} onKeyDown={onKeyDown}
+            onChange={(e) => {
+              if (maxWords) { const w = e.target.value.trim().split(/\s+/).filter(Boolean); if (w.length <= maxWords || e.target.value.length < value.length) onChange(e.target.value); }
+              else onChange(e.target.value);
+            }}
+            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${FC.border}`, borderRadius: 10, color: FC.textPrimary, fontSize: 15, fontFamily: "var(--font-primary)", resize: "vertical", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
+            onFocus={(e) => e.target.style.borderColor = FC.turquoise + "60"}
+            onBlur={(e) => e.target.style.borderColor = FC.border}
+          />
+          {maxWords && <div style={{ position: "absolute", bottom: 8, right: 12, fontSize: 11, color: wc >= maxWords ? FC.maroonLight : FC.textDim }}>{wc}/{maxWords} words</div>}
+        </div>
+      ) : (
+        <input ref={ref} type={type} value={value} placeholder={placeholder} onKeyDown={onKeyDown}
+          onChange={(e) => onChange(e.target.value)}
+          style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${FC.border}`, borderRadius: 10, color: FC.textPrimary, fontSize: 15, fontFamily: "var(--font-primary)", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
+          onFocus={(e) => e.target.style.borderColor = FC.turquoise + "60"}
+          onBlur={(e) => e.target.style.borderColor = FC.border}
+        />
+      )}
+    </div>
+  );
+};
+
+const FormDeptSelect = ({ value, onChange, options }) => (
+  <div style={{ marginBottom: 20, flex: 1 }}>
+    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: FC.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+      Department <span style={{ color: FC.turquoise }}>*</span>
+    </label>
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${FC.border}`, borderRadius: 10, color: value ? FC.textPrimary : FC.textDim, fontSize: 15, fontFamily: "var(--font-primary)", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
+      <option value="" style={{ background: FC.dark }}>Select department...</option>
+      {options.map(d => <option key={typeof d === 'string' ? d : d.value} value={typeof d === 'string' ? d : d.value} style={{ background: FC.dark }}>{typeof d === 'string' ? d : d.label}</option>)}
+    </select>
+  </div>
+);
+
+const FormSelect = ({ label, value, onChange, options, required, placeholder }) => (
+  <div style={{ marginBottom: 20, flex: 1 }}>
+    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: FC.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+      {label} {required && <span style={{ color: FC.turquoise }}>*</span>}
+    </label>
+    <select value={value} onChange={(e) => onChange(e.target.value)}
+      style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${FC.border}`, borderRadius: 10, color: value ? FC.textPrimary : FC.textDim, fontSize: 15, fontFamily: "var(--font-primary)", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
+      <option value="" style={{ background: FC.dark }}>{placeholder || "Select..."}</option>
+      {options.map((o) => <option key={o} value={o} style={{ background: FC.dark }}>{o}</option>)}
+    </select>
+  </div>
+);
+
+const FormBadge = ({ name, color }) => (
+  <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: color + "25", color, border: `1px solid ${color}40` }}>
+    <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />{name}
+  </span>
+);
+
+const VdStepLabel = ({ n, totalSteps }) => (
+  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", marginBottom: 12, fontFamily: "monospace" }}>
+    {String(n).padStart(2, "0")} / {totalSteps}
+  </p>
+);
+
+const VdQ = ({ children }) => (
+  <h2 style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 300, lineHeight: 1.3, margin: "0 0 6px", letterSpacing: "-0.015em", color: "#f0f0f0" }}>{children}</h2>
+);
+
+const VdHint = ({ children }) => (
+  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", margin: "0 0 26px", lineHeight: 1.5 }}>{children}</p>
+);
+
+const PortalBackground = () => <div className="concept-e-bg" />;
+
+const BackToPortalButton = React.memo(({ onClick }) => (
+  <button
+    onClick={onClick}
+    style={{
+      position: "fixed", top: 16, left: 16, zIndex: 9999,
+      background: "rgba(8,9,12,0.85)", backdropFilter: "blur(16px)",
+      border: `1px solid ${NHBP.turquoise}30`,
+      borderRadius: 10, padding: "8px 16px",
+      color: NHBP.turquoiseLight, fontSize: 12, fontWeight: 600,
+      cursor: "pointer", fontFamily: "var(--font-primary)",
+      transition: "all 0.25s ease",
+      boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+    }}
+    onMouseEnter={e => { e.target.style.borderColor = NHBP.turquoise + "60"; e.target.style.boxShadow = `0 4px 24px rgba(0,0,0,0.5), 0 0 12px ${NHBP.turquoiseGlow}`; }}
+    onMouseLeave={e => { e.target.style.borderColor = NHBP.turquoise + "30"; e.target.style.boxShadow = "0 4px 20px rgba(0,0,0,0.4)"; }}
+  >
+    ← Back to Portal
+  </button>
+));
 
 // ═══════════════════════════════════════════════════════════
 //  VISUAL DESIGNS FORM — UNTOUCHED (except scoping renames)
@@ -502,7 +646,6 @@ const SectionCard = ({ icon, title, subtitle, children, isDone }) => {
 function VisualDesignForm({ onBackToPortal }) {
   const [step, setStep] = useState(0);
   const [anim, setAnim] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const [form, setForm] = useState({
     pieceType: null, format: null, size: null, customSize: "",
     multiPage: false, pageCount: "", multiPageType: null, specialRequest: false, specialRequestNote: "",
@@ -520,12 +663,6 @@ function VisualDesignForm({ onBackToPortal }) {
   const inputRef = useRef(null);
   const styleContainerRef = useRef(null);
   const totalSteps = 9; // Merged style+color into one step
-
-  useEffect(() => {
-    const h = (e) => setMousePos({ x: (e.clientX / window.innerWidth) * 100, y: (e.clientY / window.innerHeight) * 100 });
-    window.addEventListener("mousemove", h);
-    return () => window.removeEventListener("mousemove", h);
-  }, []);
 
   useEffect(() => {
     if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 350);
@@ -643,28 +780,7 @@ function VisualDesignForm({ onBackToPortal }) {
     return mod?.colors || ["#666", "#888", "#aaa", "#ccc", "#eee"];
   };
 
-  const BG = () => (
-    <>
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none",
-        background: `radial-gradient(ellipse 700px 500px at ${mousePos.x}% ${mousePos.y}%, ${NHBP.turquoise}06, transparent), radial-gradient(ellipse 500px 400px at 15% 15%, ${NHBP.maroon}12, transparent), radial-gradient(ellipse 400px 350px at 85% 75%, ${NHBP.turquoise}05, transparent), linear-gradient(160deg, #08090c 0%, #0d1117 30%, #0c1018 60%, #080a0e 100%)`,
-        transition: "background 0.8s ease",
-      }} />
-      <div style={{ position: "fixed", width: 350, height: 350, borderRadius: "50%", background: `radial-gradient(circle, ${NHBP.turquoise}08 0%, transparent 70%)`, top: -80, right: -80, zIndex: 0, pointerEvents: "none" }} />
-      <div style={{ position: "fixed", width: 280, height: 280, borderRadius: "50%", background: `radial-gradient(circle, ${NHBP.maroon}10 0%, transparent 70%)`, bottom: -60, left: -60, zIndex: 0, pointerEvents: "none" }} />
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, opacity: 0.012, pointerEvents: "none", backgroundImage: `linear-gradient(${NHBP.turquoise}18 1px, transparent 1px), linear-gradient(90deg, ${NHBP.turquoise}18 1px, transparent 1px)`, backgroundSize: "60px 60px" }} />
-      <style>{`
-        input:focus, textarea:focus { border-color: ${NHBP.turquoise} !important; }
-        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.18); }
-        ::selection { background: ${NHBP.turquoise}40; }
-        @keyframes fadeSlide { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulseGlow { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 50% { transform: translateX(100%); } 100% { transform: translateX(100%); } }
-        @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.3); } }
-        .style-grid::-webkit-scrollbar { display: none; }
-      `}</style>
-    </>
-  );
+  const BG = PortalBackground;
 
   const slideStyle = {
     width: "100%", maxWidth: 720,
@@ -673,19 +789,9 @@ function VisualDesignForm({ onBackToPortal }) {
     transform: anim ? "translateY(20px)" : "translateY(0)",
   };
 
-  const StepLabel = ({ n }) => (
-    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", marginBottom: 12, fontFamily: "monospace" }}>
-      {String(n).padStart(2, "0")} / {totalSteps}
-    </p>
-  );
-
-  const Q = ({ children }) => (
-    <h2 style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 300, lineHeight: 1.3, margin: "0 0 6px", letterSpacing: "-0.015em", color: "#f0f0f0" }}>{children}</h2>
-  );
-
-  const Hint = ({ children }) => (
-    <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", margin: "0 0 26px", lineHeight: 1.5 }}>{children}</p>
-  );
+  const StepLabel = ({ n }) => <VdStepLabel n={n} totalSteps={totalSteps} />;
+  const Q = VdQ;
+  const Hint = VdHint;
 
   // ─── CONFIRMATION SCREEN ──────────────────────────────
   if (submitted) {
@@ -2171,7 +2277,6 @@ function StationeryKitForm({ onBackToPortal }) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [fading, setFading] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
   const [submitted, setSubmitted] = useState(false);
   const [ticketNumber, setTicketNumber] = useState(null);
 
@@ -2188,11 +2293,6 @@ function StationeryKitForm({ onBackToPortal }) {
   const totalSteps = 6;
 
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
-  useEffect(() => {
-    const handler = (e) => setMousePos({ x: (e.clientX / window.innerWidth) * 100, y: (e.clientY / window.innerHeight) * 100 });
-    window.addEventListener("mousemove", handler);
-    return () => window.removeEventListener("mousemove", handler);
-  }, []);
 
   const update = (field, value) => setForm(f => ({ ...f, [field]: value }));
 
@@ -2240,25 +2340,7 @@ function StationeryKitForm({ onBackToPortal }) {
   const handleKeyDown = (e) => { if (e.key === "Enter" && canAdvance()) { e.preventDefault(); goNext(); } };
   const filteredLocations = OFFICE_LOCATIONS.filter(l => l.enterprise === form.enterprise);
 
-  const Background = () => (
-    <>
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", background: `radial-gradient(ellipse 800px 600px at ${mousePos.x}% ${mousePos.y}%, ${NHBP.turquoise}08, transparent), radial-gradient(ellipse 600px 500px at 20% 20%, ${NHBP.maroon}15, transparent), radial-gradient(ellipse 500px 400px at 80% 80%, ${NHBP.turquoise}06, transparent), linear-gradient(160deg, #08090c 0%, #0d1117 30%, #0c1018 60%, #080a0e 100%)` }} />
-      <div style={{ position: "fixed", width: 400, height: 400, borderRadius: "50%", pointerEvents: "none", background: `radial-gradient(circle, ${NHBP.turquoise}0a 0%, transparent 70%)`, top: -100, right: -100, animation: "float1 25s ease-in-out infinite", zIndex: 0 }} />
-      <div style={{ position: "fixed", width: 350, height: 350, borderRadius: "50%", pointerEvents: "none", background: `radial-gradient(circle, ${NHBP.maroon}12 0%, transparent 70%)`, bottom: -80, left: -80, animation: "float2 30s ease-in-out infinite", zIndex: 0 }} />
-      <div style={{ position: "fixed", inset: 0, zIndex: 0, opacity: 0.015, pointerEvents: "none", backgroundImage: `linear-gradient(${NHBP.turquoise}20 1px, transparent 1px), linear-gradient(90deg, ${NHBP.turquoise}20 1px, transparent 1px)`, backgroundSize: "60px 60px" }} />
-      <style>{`
-        @keyframes float1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-30px, 20px) scale(1.1); } }
-        @keyframes float2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, -25px) scale(1.05); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        input:focus, textarea:focus { border-color: ${NHBP.turquoise} !important; }
-        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
-        ::selection { background: ${NHBP.turquoise}40; }
-        *, *::before, *::after { direction: ltr; unicode-bidi: normal; }
-        input, textarea, select { direction: ltr !important; text-align: left !important; unicode-bidi: plaintext !important; }
-      `}</style>
-    </>
-  );
+  const Background = PortalBackground;
 
   const slideStyle = { width: "100%", maxWidth: 620, transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", opacity: fading ? 0 : 1, transform: fading ? `translateY(${direction * 24}px)` : "translateY(0)" };
   const inputStyle = { width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#f0f0f0", fontSize: 18, fontFamily: "Tahoma, 'Segoe UI', sans-serif", padding: "14px 16px", outline: "none", transition: "border-color 0.3s ease", caretColor: NHBP.turquoise, boxSizing: "border-box", direction: "ltr", textAlign: "left", unicodeBidi: "plaintext" };
@@ -2505,19 +2587,7 @@ function StationeryKitForm({ onBackToPortal }) {
 // ===========================================================
 function EmployeeHeadshotsForm({ onBackToPortal }) {
   // ── Local constants ──
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
+  const C = FC;
 
   const BOOKINGS_URL = "https://outlook.office.com/book/Headshots@nhbp-nsn.gov";
 
@@ -2559,58 +2629,6 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
   ];
 
   // ── Local sub-components ──
-  const HsGlassCard = ({ children, active, onClick, style: s = {} }) => {
-    const [h, setH] = useState(false);
-    return (
-      <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-        style={{
-          background: active ? `linear-gradient(135deg, ${C.turquoise}18, ${C.turquoise}08)` : h ? "rgba(255,255,255,0.04)" : C.glass,
-          border: `1px solid ${active ? C.turquoise + "50" : h ? "rgba(255,255,255,0.12)" : C.border}`,
-          borderRadius: 14, padding: "16px 20px", cursor: onClick ? "pointer" : "default",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: active ? `0 8px 32px ${C.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.06)` : h ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
-          transform: h && onClick ? "translateY(-1px)" : "translateY(0)",
-          position: "relative", overflow: "hidden", ...s,
-        }}>
-        {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${C.turquoise}60, transparent)` }} />}
-        {children}
-      </div>
-    );
-  };
-
-  const HsInput = ({ label, value, onChange, placeholder, type = "text", required, inputRef: ref, onKeyDown }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-      </label>
-      <input ref={ref} type={type} value={value} placeholder={placeholder} onKeyDown={onKeyDown}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-        onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-        onBlur={(e) => e.target.style.borderColor = C.border}
-      />
-    </div>
-  );
-
-  const HsDeptSelect = ({ value, onChange }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        Department <span style={{ color: C.turquoise }}>*</span>
-      </label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
-        <option value="" style={{ background: C.dark }}>Select department...</option>
-        {HS_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
-      </select>
-    </div>
-  );
-
-  const HsBadge = ({ name, color }) => (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: color + "25", color, border: `1px solid ${color}40` }}>
-      <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />{name}
-    </span>
-  );
-
   // ── State ──
   const [step, setStep] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -2672,13 +2690,13 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
             Your headshot request has been submitted.<br />Now pick a time that works for you.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            <HsBadge name="Headshots" color="#cd8de5" />
-            {form.headshotType === "new" && <HsBadge name="🆕 New Hire" color="#61bd4f" />}
-            {form.headshotType === "update" && <HsBadge name="🔁 Replacement" color="#ff9f1a" />}
-            {form.headshotType === "group" && <HsBadge name="👥 Group" color="#0079bf" />}
-            {form.locationPref && form.locationPref !== "studio" && <HsBadge name="📍 Special Location" color="#00c2e0" />}
+            <FormBadge name="Headshots" color="#cd8de5" />
+            {form.headshotType === "new" && <FormBadge name="🆕 New Hire" color="#61bd4f" />}
+            {form.headshotType === "update" && <FormBadge name="🔁 Replacement" color="#ff9f1a" />}
+            {form.headshotType === "group" && <FormBadge name="👥 Group" color="#0079bf" />}
+            {form.locationPref && form.locationPref !== "studio" && <FormBadge name="📍 Special Location" color="#00c2e0" />}
           </div>
-          <HsGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
+          <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
             {[
               ["Ticket", ticketNumber, true],
               ["Type", HEADSHOT_TYPES.find(t => t.id === form.headshotType)?.label],
@@ -2692,7 +2710,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
                 <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit" }}>{v}</span>
               </div>
             ))}
-          </HsGlassCard>
+          </FormGlassCard>
           <a href={BOOKINGS_URL} target="_blank" rel="noopener noreferrer"
             style={{
               display: "inline-block", padding: "16px 36px", marginBottom: 20,
@@ -2735,12 +2753,12 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
           <h2 style={HS.stepTitle}>Your Information</h2>
           <p style={HS.stepDesc}>Tell us who needs the headshot.</p>
           <div style={{ display: "flex", gap: 12 }}>
-            <HsInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} />
-            <HsInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" />
+            <FormInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} />
+            <FormInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" />
           </div>
-          <HsDeptSelect value={form.department} onChange={(v) => u("department", v)} />
-          <HsInput label="Title / Position" value={form.title} onChange={(v) => u("title", v)} placeholder="Your job title" />
-          <HsInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
+          <FormDeptSelect options={HS_DEPTS} value={form.department} onChange={(v) => u("department", v)} />
+          <FormInput label="Title / Position" value={form.title} onChange={(v) => u("title", v)} placeholder="Your job title" />
+          <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
           <div style={HS.navRow}>
             <button onClick={() => goTo(0)} style={HS.btnBack}>← Back</button>
             <button onClick={() => goTo(2)} disabled={!form.firstName || !form.lastName || !form.department || !form.email.includes("@")} style={HS.btn}>Continue →</button>
@@ -2754,18 +2772,18 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
           <p style={HS.stepDesc}>Help us prepare the right setup for you.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
             {HEADSHOT_TYPES.map(t => (
-              <HsGlassCard key={t.id} active={form.headshotType === t.id} onClick={() => u("headshotType", t.id)}
+              <FormGlassCard key={t.id} active={form.headshotType === t.id} onClick={() => u("headshotType", t.id)}
                 style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <span style={{ fontSize: 28 }}>{t.icon}</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary }}>{t.label}</div>
                   <div style={{ fontSize: 12, color: C.textDim }}>{t.desc}</div>
                 </div>
-              </HsGlassCard>
+              </FormGlassCard>
             ))}
           </div>
           {form.headshotType === "group" && (
-            <HsInput label="Who's in the group?" value={form.groupNames} onChange={(v) => u("groupNames", v)} placeholder="List names of all employees" />
+            <FormInput label="Who's in the group?" value={form.groupNames} onChange={(v) => u("groupNames", v)} placeholder="List names of all employees" />
           )}
           <div style={HS.navRow}>
             <button onClick={() => goTo(1)} style={HS.btnBack}>← Back</button>
@@ -2780,14 +2798,14 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
           <p style={HS.stepDesc}>Indoor studio or outdoor natural light — your call.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
             {LOCATIONS.map(l => (
-              <HsGlassCard key={l.id} active={form.locationPref === l.id} onClick={() => u("locationPref", l.id)}
+              <FormGlassCard key={l.id} active={form.locationPref === l.id} onClick={() => u("locationPref", l.id)}
                 style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <span style={{ fontSize: 28 }}>{l.icon}</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary }}>{l.label}</div>
                   <div style={{ fontSize: 12, color: C.textDim }}>{l.desc}</div>
                 </div>
-              </HsGlassCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={HS.navRow}>
@@ -2832,14 +2850,14 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
           <div style={HS.stepWrap}>
             <h2 style={HS.stepTitle}>Review & Book</h2>
             <p style={HS.stepDesc}>Confirm your details, then schedule your session.</p>
-            <HsGlassCard style={{ marginBottom: 16 }}>
+            <FormGlassCard style={{ marginBottom: 16 }}>
               {items.map(([k, v], i) => (
                 <div key={k + i} style={{ paddingBottom: 12, marginBottom: i < items.length - 1 ? 12 : 0, borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{k}</div>
                   <div style={{ fontSize: 14, color: C.textPrimary, lineHeight: 1.5 }}>{v}</div>
                 </div>
               ))}
-            </HsGlassCard>
+            </FormGlassCard>
             <p style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6, marginBottom: 24, textAlign: "center" }}>
               After submitting, you'll be directed to our scheduling page<br />to pick a day and time that works for you.
             </p>
@@ -2879,20 +2897,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 // ===========================================================
 function InstantAlertForm({ onBackToPortal }) {
   // ── Local constants ──
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    red: "#ba0c2f", redLight: "#e02040",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
+  const C = FC;
 
   const IA_DEPTS = [
     { value: "Administration", label: "Administration" },
@@ -2935,68 +2940,6 @@ function InstantAlertForm({ onBackToPortal }) {
   ];
 
   // ── Local sub-components ──
-  const IaCard = ({ children, active, onClick, style: s = {}, glowColor }) => {
-    const [h, setH] = useState(false);
-    const gc = glowColor || C.turquoiseGlow;
-    return (
-      <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-        style={{
-          background: active ? `linear-gradient(135deg, ${glowColor || C.turquoise}18, ${glowColor || C.turquoise}08)` : h ? "rgba(255,255,255,0.04)" : C.glass,
-          border: `1px solid ${active ? (glowColor || C.turquoise) + "50" : h ? "rgba(255,255,255,0.12)" : C.border}`,
-          borderRadius: 14, padding: "16px 20px", cursor: onClick ? "pointer" : "default",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: active ? `0 8px 32px ${gc}, inset 0 1px 0 rgba(255,255,255,0.06)` : h ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
-          transform: h && onClick ? "translateY(-1px)" : "translateY(0)",
-          position: "relative", overflow: "hidden", ...s,
-        }}>
-        {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${glowColor || C.turquoise}60, transparent)` }} />}
-        {children}
-      </div>
-    );
-  };
-
-  const IaInput = ({ label, value, onChange, placeholder, type = "text", required, inputRef: ref, onKeyDown, multiline }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-      </label>
-      {multiline ? (
-        <textarea ref={ref} value={value} rows={4} placeholder={placeholder} onKeyDown={onKeyDown}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", resize: "vertical", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-          onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-          onBlur={(e) => e.target.style.borderColor = C.border}
-        />
-      ) : (
-        <input ref={ref} type={type} value={value} placeholder={placeholder} onKeyDown={onKeyDown}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-          onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-          onBlur={(e) => e.target.style.borderColor = C.border}
-        />
-      )}
-    </div>
-  );
-
-  const IaDeptSelect = ({ value, onChange }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        Department <span style={{ color: C.turquoise }}>*</span>
-      </label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
-        <option value="" style={{ background: C.dark }}>Select department...</option>
-        {IA_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
-      </select>
-    </div>
-  );
-
-  const IaBadge = ({ name, color }) => (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: color + "25", color, border: `1px solid ${color}40` }}>
-      <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />{name}
-    </span>
-  );
-
   // ── State ──
   const [step, setStep] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -3063,11 +3006,11 @@ function InstantAlertForm({ onBackToPortal }) {
             Your {urgencyObj?.label.toLowerCase()} alert has been routed<br />to Communications for immediate action.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            {form.urgency === "emergency" && <IaBadge name="🚨 Emergency" color="#eb5a46" />}
-            {form.urgency === "urgent" && <IaBadge name="⚡ Urgent" color="#ff9f1a" />}
-            {form.urgency === "priority" && <IaBadge name="📢 Priority" color="#00c2e0" />}
+            {form.urgency === "emergency" && <FormBadge name="🚨 Emergency" color="#eb5a46" />}
+            {form.urgency === "urgent" && <FormBadge name="⚡ Urgent" color="#ff9f1a" />}
+            {form.urgency === "priority" && <FormBadge name="📢 Priority" color="#00c2e0" />}
           </div>
-          <IaCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
+          <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
             {[
               ["Ticket", ticketNumber, true],
               ["Urgency", `${urgencyObj?.icon} ${urgencyObj?.label}`],
@@ -3081,7 +3024,7 @@ function InstantAlertForm({ onBackToPortal }) {
                 <span style={{ fontSize: 13, color: accent ? accentColor : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit", textAlign: "right", maxWidth: "60%" }}>{v}</span>
               </div>
             ))}
-          </IaCard>
+          </FormGlassCard>
           <button onClick={() => { setSubmitted(false); setStep(0); }} style={{ ...IA.btn, marginTop: 20 }}>Submit Another Alert</button>
         </div>
       </div>
@@ -3108,13 +3051,13 @@ function InstantAlertForm({ onBackToPortal }) {
           <h2 style={IA.stepTitle}>Who's requesting?</h2>
           <p style={IA.stepDesc}>We need to know who to follow up with.</p>
           <div style={{ display: "flex", gap: 12 }}>
-            <IaInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} />
-            <IaInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" />
+            <FormInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} />
+            <FormInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" />
           </div>
-          <IaDeptSelect value={form.department} onChange={(v) => u("department", v)} />
+          <FormDeptSelect options={IA_DEPTS} value={form.department} onChange={(v) => u("department", v)} />
           <div style={{ display: "flex", gap: 12 }}>
-            <IaInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
-            <IaInput label="Phone" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" />
+            <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
+            <FormInput label="Phone" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" />
           </div>
           <div style={IA.navRow}>
             <button onClick={() => goTo(0)} style={IA.btnBack}>← Back</button>
@@ -3129,7 +3072,7 @@ function InstantAlertForm({ onBackToPortal }) {
           <p style={IA.stepDesc}>This determines how fast we act.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
             {URGENCY_LEVELS.map(l => (
-              <IaCard key={l.id} active={form.urgency === l.id} onClick={() => u("urgency", l.id)}
+              <FormGlassCard key={l.id} active={form.urgency === l.id} onClick={() => u("urgency", l.id)}
                 glowColor={l.color}
                 style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <span style={{ fontSize: 28, filter: form.urgency === l.id ? `drop-shadow(0 0 8px ${l.glow})` : "none" }}>{l.icon}</span>
@@ -3137,7 +3080,7 @@ function InstantAlertForm({ onBackToPortal }) {
                   <div style={{ fontSize: 15, fontWeight: 600, color: form.urgency === l.id ? l.color : C.textPrimary }}>{l.label}</div>
                   <div style={{ fontSize: 12, color: C.textDim }}>{l.desc}</div>
                 </div>
-              </IaCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={IA.navRow}>
@@ -3151,14 +3094,14 @@ function InstantAlertForm({ onBackToPortal }) {
         <div style={IA.stepWrap}>
           <h2 style={IA.stepTitle}>{urgencyObj?.icon} Alert Message</h2>
           <p style={IA.stepDesc}>What do people need to know?</p>
-          <IaInput label="Subject Line" value={form.subject} required onChange={(v) => u("subject", v)} placeholder="e.g. Building Closure - Jan 15" inputRef={inputRef} />
-          <IaInput label="Full Message" value={form.message} required onChange={(v) => u("message", v)} placeholder="The details people need to know..." multiline />
-          <IaInput label="Who is this for?" value={form.audience} onChange={(v) => u("audience", v)} placeholder="All employees, specific department, tribal members, public..." />
+          <FormInput label="Subject Line" value={form.subject} required onChange={(v) => u("subject", v)} placeholder="e.g. Building Closure - Jan 15" inputRef={inputRef} />
+          <FormInput label="Full Message" value={form.message} required onChange={(v) => u("message", v)} placeholder="The details people need to know..." multiline />
+          <FormInput label="Who is this for?" value={form.audience} onChange={(v) => u("audience", v)} placeholder="All employees, specific department, tribal members, public..." />
           <div style={{ display: "flex", gap: 12 }}>
-            <IaInput label="Effective Date" value={form.effectiveDate} type="date" onChange={(v) => u("effectiveDate", v)} />
-            <IaInput label="Time" value={form.effectiveTime} type="time" onChange={(v) => u("effectiveTime", v)} />
+            <FormInput label="Effective Date" value={form.effectiveDate} type="date" onChange={(v) => u("effectiveDate", v)} />
+            <FormInput label="Time" value={form.effectiveTime} type="time" onChange={(v) => u("effectiveTime", v)} />
           </div>
-          <IaInput label="Approved By (if applicable)" value={form.approvedBy} onChange={(v) => u("approvedBy", v)} placeholder="Director, Council, Department Head..." />
+          <FormInput label="Approved By (if applicable)" value={form.approvedBy} onChange={(v) => u("approvedBy", v)} placeholder="Director, Council, Department Head..." />
           <div style={IA.navRow}>
             <button onClick={() => goTo(2)} style={IA.btnBack}>← Back</button>
             <button onClick={() => goTo(4)} disabled={!form.subject || !form.message} style={{ ...IA.btn, background: accentColor }}>Continue →</button>
@@ -3172,11 +3115,11 @@ function InstantAlertForm({ onBackToPortal }) {
           <p style={IA.stepDesc}>How should this alert go out? Select all that apply.</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
             {CHANNELS.map(c => (
-              <IaCard key={c.id} active={form.channels[c.id]} onClick={() => toggleChannel(c.id)}
+              <FormGlassCard key={c.id} active={form.channels[c.id]} onClick={() => toggleChannel(c.id)}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
                 <span style={{ fontSize: 22 }}>{c.icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: form.channels[c.id] ? C.textPrimary : C.textSecondary }}>{c.label}</span>
-              </IaCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={IA.navRow}>
@@ -3205,14 +3148,14 @@ function InstantAlertForm({ onBackToPortal }) {
           <div style={IA.stepWrap}>
             <h2 style={IA.stepTitle}>Review Alert</h2>
             <p style={IA.stepDesc}>Confirm everything before sending.</p>
-            <IaCard style={{ marginBottom: 16 }}>
+            <FormGlassCard style={{ marginBottom: 16 }}>
               {items.map(([k, v], i) => (
                 <div key={k + i} style={{ paddingBottom: 12, marginBottom: i < items.length - 1 ? 12 : 0, borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{k}</div>
                   <div style={{ fontSize: 14, color: k === "Urgency" ? accentColor : C.textPrimary, lineHeight: 1.5 }}>{v}</div>
                 </div>
               ))}
-            </IaCard>
+            </FormGlassCard>
             <div style={IA.navRow}>
               <button onClick={() => goTo(4)} style={IA.btnBack}>← Back</button>
               <button onClick={handleSubmit} style={{ ...IA.btn, background: `linear-gradient(135deg, ${accentColor}, ${C.maroon})` }}>⚡ Submit Alert</button>
@@ -3250,38 +3193,7 @@ function InstantAlertForm({ onBackToPortal }) {
 function TurtlePressForm({ onBackToPortal }) {
   const [subView, setSubView] = useState("menu"); // "menu" | "submission" | "article" | "feedback"
 
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
-
-  const TpGlassCard = ({ children, active, onClick, style: s = {} }) => {
-    const [h, setH] = useState(false);
-    return (
-      <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-        style={{
-          background: active ? `linear-gradient(135deg, ${C.turquoise}18, ${C.turquoise}08)` : h ? "rgba(255,255,255,0.04)" : C.glass,
-          border: `1px solid ${active ? C.turquoise + "50" : h ? "rgba(255,255,255,0.12)" : C.border}`,
-          borderRadius: 14, padding: "16px 20px", cursor: onClick ? "pointer" : "default",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: active ? `0 8px 32px ${C.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.06)` : h ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
-          transform: h && onClick ? "translateY(-1px)" : "translateY(0)",
-          position: "relative", overflow: "hidden", ...s,
-        }}>
-        {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${C.turquoise}60, transparent)` }} />}
-        {children}
-      </div>
-    );
-  };
+  const C = FC;
 
   // ─── SUB-MENU ────────────────────────────
   if (subView === "menu") {
@@ -3307,14 +3219,14 @@ function TurtlePressForm({ onBackToPortal }) {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {options.map(o => (
-              <TpGlassCard key={o.id} onClick={() => setSubView(o.id)}
+              <FormGlassCard key={o.id} onClick={() => setSubView(o.id)}
                 style={{ display: "flex", alignItems: "center", gap: 16, padding: "20px 24px", textAlign: "left" }}>
                 <span style={{ fontSize: 32, filter: `drop-shadow(0 0 8px ${o.color}40)` }}>{o.icon}</span>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: C.textPrimary, marginBottom: 4 }}>{o.label}</div>
                   <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.5 }}>{o.desc}</div>
                 </div>
-              </TpGlassCard>
+              </FormGlassCard>
             ))}
           </div>
         </div>
@@ -3342,19 +3254,7 @@ function TurtlePressForm({ onBackToPortal }) {
 
 // ── QTP FEEDBACK SUB-FORM ──────────────────
 function QTPFeedbackSubForm({ onBack }) {
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
+  const C = FC;
 
   const FEEDBACK_TYPES = [
     { id: "correction", icon: "✏️", label: "Correction", desc: "Something needs to be fixed" },
@@ -3370,76 +3270,6 @@ function QTPFeedbackSubForm({ onBack }) {
   ];
 
   // ── Sub-components ──
-  const FbGlassCard = ({ children, active, onClick, style: s = {} }) => {
-    const [h, setH] = useState(false);
-    return (
-      <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-        style={{
-          background: active ? `linear-gradient(135deg, ${C.turquoise}18, ${C.turquoise}08)` : h ? "rgba(255,255,255,0.04)" : C.glass,
-          border: `1px solid ${active ? C.turquoise + "50" : h ? "rgba(255,255,255,0.12)" : C.border}`,
-          borderRadius: 14, padding: "16px 20px", cursor: onClick ? "pointer" : "default",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: active ? `0 8px 32px ${C.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.06)` : h ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
-          transform: h && onClick ? "translateY(-1px)" : "translateY(0)",
-          position: "relative", overflow: "hidden", ...s,
-        }}>
-        {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${C.turquoise}60, transparent)` }} />}
-        {children}
-      </div>
-    );
-  };
-
-  const FbInput = ({ label, value, onChange, placeholder, type = "text", required, inputRef: ref, onKeyDown, multiline, maxWords }) => {
-    const wc = multiline && maxWords ? value.trim().split(/\s+/).filter(Boolean).length : 0;
-    return (
-      <div style={{ marginBottom: 20, flex: 1 }}>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-          {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-        </label>
-        {multiline ? (
-          <div style={{ position: "relative" }}>
-            <textarea ref={ref} value={value} rows={4} placeholder={placeholder} onKeyDown={onKeyDown}
-              onChange={(e) => {
-                if (maxWords) { const w = e.target.value.trim().split(/\s+/).filter(Boolean); if (w.length <= maxWords || e.target.value.length < value.length) onChange(e.target.value); }
-                else onChange(e.target.value);
-              }}
-              style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", resize: "vertical", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-              onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-              onBlur={(e) => e.target.style.borderColor = C.border}
-            />
-            {maxWords && <div style={{ position: "absolute", bottom: 8, right: 12, fontSize: 11, color: wc >= maxWords ? C.maroonLight : C.textDim }}>{wc}/{maxWords} words</div>}
-          </div>
-        ) : (
-          <input ref={ref} type={type} value={value} placeholder={placeholder} onKeyDown={onKeyDown}
-            onChange={(e) => onChange(e.target.value)}
-            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-            onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-            onBlur={(e) => e.target.style.borderColor = C.border}
-          />
-        )}
-      </div>
-    );
-  };
-
-  const FbSelect = ({ label, value, onChange, options, required, placeholder }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-      </label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
-        <option value="" style={{ background: C.dark }}>{placeholder || "Select..."}</option>
-        {options.map((o) => <option key={o} value={o} style={{ background: C.dark }}>{o}</option>)}
-      </select>
-    </div>
-  );
-
-  const FbBadge = ({ name, color }) => (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: color + "25", color, border: `1px solid ${color}40` }}>
-      <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />{name}
-    </span>
-  );
-
   // ── State ──
   const [step, setStep] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -3501,14 +3331,14 @@ function QTPFeedbackSubForm({ onBack }) {
             Your feedback has been received.<br />We appreciate you helping us improve the Turtle Press.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            <FbBadge name="🐢 QTP" color="#0079bf" />
-            <FbBadge name="💬 Feedback" color="#c9a84c" />
-            {form.feedbackType === "correction" && <FbBadge name="✏️ Correction" color="#eb5a46" />}
-            {form.feedbackType === "compliment" && <FbBadge name="⭐ Compliment" color="#61bd4f" />}
-            {form.feedbackType === "suggestion" && <FbBadge name="💡 Suggestion" color="#00c2e0" />}
-            {form.feedbackType === "question" && <FbBadge name="❓ Question" color="#f2d600" />}
+            <FormBadge name="🐢 QTP" color="#0079bf" />
+            <FormBadge name="💬 Feedback" color="#c9a84c" />
+            {form.feedbackType === "correction" && <FormBadge name="✏️ Correction" color="#eb5a46" />}
+            {form.feedbackType === "compliment" && <FormBadge name="⭐ Compliment" color="#61bd4f" />}
+            {form.feedbackType === "suggestion" && <FormBadge name="💡 Suggestion" color="#00c2e0" />}
+            {form.feedbackType === "question" && <FormBadge name="❓ Question" color="#f2d600" />}
           </div>
-          <FbGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
+          <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
             {[
               ["Ticket", ticketNumber, true],
               ["Type", `${ft?.icon} ${ft?.label}`],
@@ -3521,7 +3351,7 @@ function QTPFeedbackSubForm({ onBack }) {
                 <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit" }}>{v}</span>
               </div>
             ))}
-          </FbGlassCard>
+          </FormGlassCard>
           <button onClick={() => { setSubmitted(false); setStep(0); }} style={{ ...FB.btn, marginTop: 28 }}>Submit More Feedback</button>
         </div>
       </div>
@@ -3551,8 +3381,8 @@ function QTPFeedbackSubForm({ onBack }) {
           <h2 style={FB.stepTitle}>What's your name?</h2>
           <p style={FB.stepDesc}>Let us know who's sharing feedback.</p>
           <div style={{ display: "flex", gap: 12 }}>
-            <FbInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
-            <FbInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
+            <FormInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
+            <FormInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
           </div>
           <div style={FB.navRow}>
             <button onClick={() => goTo(0)} style={FB.btnBack}>← Back</button>
@@ -3565,7 +3395,7 @@ function QTPFeedbackSubForm({ onBack }) {
         <div style={FB.stepWrap}>
           <h2 style={FB.stepTitle}>Tribal ID Number</h2>
           <p style={FB.stepDesc}>Enter your 4-digit tribal identification number.</p>
-          <FbInput label="Tribal ID #" value={form.tribalId} required onChange={(v) => { if (/^\d{0,4}$/.test(v)) u("tribalId", v); }} placeholder="0000" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.tribalId.length === 4 && goTo(3)} />
+          <FormInput label="Tribal ID #" value={form.tribalId} required onChange={(v) => { if (/^\d{0,4}$/.test(v)) u("tribalId", v); }} placeholder="0000" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.tribalId.length === 4 && goTo(3)} />
           <div style={FB.navRow}>
             <button onClick={() => goTo(1)} style={FB.btnBack}>← Back</button>
             <button onClick={() => goTo(3)} disabled={form.tribalId.length !== 4} style={FB.btn}>Continue →</button>
@@ -3577,7 +3407,7 @@ function QTPFeedbackSubForm({ onBack }) {
         <div style={FB.stepWrap}>
           <h2 style={FB.stepTitle}>Which edition?</h2>
           <p style={FB.stepDesc}>Select the Turtle Press edition your feedback is about.</p>
-          <FbSelect label="Edition" value={form.edition} required onChange={(v) => u("edition", v)} options={EDITIONS} placeholder="Select edition" />
+          <FormSelect label="Edition" value={form.edition} required onChange={(v) => u("edition", v)} options={EDITIONS} placeholder="Select edition" />
           <div style={FB.navRow}>
             <button onClick={() => goTo(2)} style={FB.btnBack}>← Back</button>
             <button onClick={() => goTo(4)} disabled={!form.edition} style={FB.btn}>Continue →</button>
@@ -3591,12 +3421,12 @@ function QTPFeedbackSubForm({ onBack }) {
           <p style={FB.stepDesc}>We want to hear it all — the good and the fixable.</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
             {FEEDBACK_TYPES.map((f) => (
-              <FbGlassCard key={f.id} active={form.feedbackType === f.id} onClick={() => u("feedbackType", f.id)}
+              <FormGlassCard key={f.id} active={form.feedbackType === f.id} onClick={() => u("feedbackType", f.id)}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "18px 12px", textAlign: "center" }}>
                 <span style={{ fontSize: 28, filter: form.feedbackType === f.id ? `drop-shadow(0 0 8px ${C.turquoiseGlow})` : "none", transition: "filter 0.3s" }}>{f.icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{f.label}</span>
                 <span style={{ fontSize: 10, color: C.textDim, lineHeight: 1.4 }}>{f.desc}</span>
-              </FbGlassCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={FB.navRow}>
@@ -3618,20 +3448,20 @@ function QTPFeedbackSubForm({ onBack }) {
                "We're happy to help."}
             </p>
             {form.feedbackType === "correction" && (<>
-              <FbInput label="Page Number (if known)" value={form.pageNumber} onChange={(v) => u("pageNumber", v)} placeholder="e.g. Page 4" inputRef={inputRef} />
-              <FbInput label="Article Title (if known)" value={form.articleTitle} onChange={(v) => u("articleTitle", v)} placeholder="Title of the article" />
-              <FbInput label="What needs to be corrected?" value={form.correctionDetails} required onChange={(v) => u("correctionDetails", v)} placeholder="Describe the error and what it should say..." multiline />
+              <FormInput label="Page Number (if known)" value={form.pageNumber} onChange={(v) => u("pageNumber", v)} placeholder="e.g. Page 4" inputRef={inputRef} />
+              <FormInput label="Article Title (if known)" value={form.articleTitle} onChange={(v) => u("articleTitle", v)} placeholder="Title of the article" />
+              <FormInput label="What needs to be corrected?" value={form.correctionDetails} required onChange={(v) => u("correctionDetails", v)} placeholder="Describe the error and what it should say..." multiline />
             </>)}
             {form.feedbackType === "compliment" && (<>
-              <FbInput label="Article or Section (optional)" value={form.articleTitle} onChange={(v) => u("articleTitle", v)} placeholder="Which article or section?" inputRef={inputRef} />
-              <FbInput label="What did you enjoy?" value={form.feedback} required onChange={(v) => u("feedback", v)} placeholder="Tell us what you liked..." multiline maxWords={40} />
+              <FormInput label="Article or Section (optional)" value={form.articleTitle} onChange={(v) => u("articleTitle", v)} placeholder="Which article or section?" inputRef={inputRef} />
+              <FormInput label="What did you enjoy?" value={form.feedback} required onChange={(v) => u("feedback", v)} placeholder="Tell us what you liked..." multiline maxWords={40} />
             </>)}
             {form.feedbackType === "suggestion" && (<>
-              <FbInput label="Your Suggestion" value={form.feedback} required onChange={(v) => u("feedback", v)} placeholder="What would you like to see in future editions?" inputRef={inputRef} multiline maxWords={40} />
+              <FormInput label="Your Suggestion" value={form.feedback} required onChange={(v) => u("feedback", v)} placeholder="What would you like to see in future editions?" inputRef={inputRef} multiline maxWords={40} />
             </>)}
             {form.feedbackType === "question" && (<>
-              <FbInput label="Article or Topic (optional)" value={form.articleTitle} onChange={(v) => u("articleTitle", v)} placeholder="Related to which article or topic?" inputRef={inputRef} />
-              <FbInput label="Your Question" value={form.feedback} required onChange={(v) => u("feedback", v)} placeholder="What would you like to know?" multiline maxWords={40} />
+              <FormInput label="Article or Topic (optional)" value={form.articleTitle} onChange={(v) => u("articleTitle", v)} placeholder="Related to which article or topic?" inputRef={inputRef} />
+              <FormInput label="Your Question" value={form.feedback} required onChange={(v) => u("feedback", v)} placeholder="What would you like to know?" multiline maxWords={40} />
             </>)}
             <div style={FB.navRow}>
               <button onClick={() => goTo(4)} style={FB.btnBack}>← Back</button>
@@ -3645,8 +3475,8 @@ function QTPFeedbackSubForm({ onBack }) {
         <div style={FB.stepWrap}>
           <h2 style={FB.stepTitle}>Contact Information</h2>
           <p style={FB.stepDesc}>Optional — in case we need to follow up on your feedback.</p>
-          <FbInput label="Email" value={form.email} onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && goTo(7)} />
-          <FbInput label="Phone Number" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" onKeyDown={(e) => e.key === "Enter" && goTo(7)} />
+          <FormInput label="Email" value={form.email} onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && goTo(7)} />
+          <FormInput label="Phone Number" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" onKeyDown={(e) => e.key === "Enter" && goTo(7)} />
           <div style={FB.navRow}>
             <button onClick={() => goTo(5)} style={FB.btnBack}>← Back</button>
             <button onClick={() => goTo(7)} style={FB.btn}>{form.email ? "Review →" : "Skip to Review →"}</button>
@@ -3673,14 +3503,14 @@ function QTPFeedbackSubForm({ onBack }) {
           <div style={FB.stepWrap}>
             <h2 style={FB.stepTitle}>Review Your Feedback</h2>
             <p style={FB.stepDesc}>Make sure everything looks good.</p>
-            <FbGlassCard style={{ marginBottom: 16 }}>
+            <FormGlassCard style={{ marginBottom: 16 }}>
               {items.map(([k, v], i) => (
                 <div key={k + i} style={{ paddingBottom: 12, marginBottom: i < items.length - 1 ? 12 : 0, borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{k}</div>
                   <div style={{ fontSize: 14, color: C.textPrimary, lineHeight: 1.5 }}>{v}</div>
                 </div>
               ))}
-            </FbGlassCard>
+            </FormGlassCard>
             <div style={FB.navRow}>
               <button onClick={() => goTo(6)} style={FB.btnBack}>← Back</button>
               <button onClick={handleSubmit} style={{ ...FB.btn, background: `linear-gradient(135deg, ${C.gold}, ${C.maroon})` }}>🐢 Submit Feedback</button>
@@ -3716,19 +3546,7 @@ function QTPFeedbackSubForm({ onBack }) {
 //  QTP SUBMISSION SUB-FORM (Celebrations & Photos)
 // ===========================================================
 function QTPSubmissionSubForm({ onBack }) {
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
+  const C = FC;
 
   const SUBMISSION_TYPES = [
     { id: "birthday", icon: "🎂", label: "Birthday", desc: "Celebrate a tribal member's birthday" },
@@ -3744,76 +3562,6 @@ function QTPSubmissionSubForm({ onBack }) {
   const DEADLINE_NOTICE = `Deadline for birthday/celebration submissions is the 10th of each month for the next edition.`;
 
   // ── Sub-components ──
-  const SmGlassCard = ({ children, active, onClick, style: s = {} }) => {
-    const [h, setH] = useState(false);
-    return (
-      <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-        style={{
-          background: active ? `linear-gradient(135deg, ${C.turquoise}18, ${C.turquoise}08)` : h ? "rgba(255,255,255,0.04)" : C.glass,
-          border: `1px solid ${active ? C.turquoise + "50" : h ? "rgba(255,255,255,0.12)" : C.border}`,
-          borderRadius: 14, padding: "16px 20px", cursor: onClick ? "pointer" : "default",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: active ? `0 8px 32px ${C.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.06)` : h ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
-          transform: h && onClick ? "translateY(-1px)" : "translateY(0)",
-          position: "relative", overflow: "hidden", ...s,
-        }}>
-        {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${C.turquoise}60, transparent)` }} />}
-        {children}
-      </div>
-    );
-  };
-
-  const SmInput = ({ label, value, onChange, placeholder, type = "text", required, inputRef: ref, onKeyDown, multiline, maxWords }) => {
-    const wc = multiline && maxWords ? value.trim().split(/\s+/).filter(Boolean).length : 0;
-    return (
-      <div style={{ marginBottom: 20, flex: 1 }}>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-          {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-        </label>
-        {multiline ? (
-          <div style={{ position: "relative" }}>
-            <textarea ref={ref} value={value} rows={3} placeholder={placeholder} onKeyDown={onKeyDown}
-              onChange={(e) => {
-                if (maxWords) { const w = e.target.value.trim().split(/\s+/).filter(Boolean); if (w.length <= maxWords || e.target.value.length < value.length) onChange(e.target.value); }
-                else onChange(e.target.value);
-              }}
-              style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", resize: "vertical", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-              onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-              onBlur={(e) => e.target.style.borderColor = C.border}
-            />
-            {maxWords && <div style={{ position: "absolute", bottom: 8, right: 12, fontSize: 11, color: wc >= maxWords ? C.maroonLight : C.textDim }}>{wc}/{maxWords} words</div>}
-          </div>
-        ) : (
-          <input ref={ref} type={type} value={value} placeholder={placeholder} onKeyDown={onKeyDown}
-            onChange={(e) => onChange(e.target.value)}
-            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-            onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-            onBlur={(e) => e.target.style.borderColor = C.border}
-          />
-        )}
-      </div>
-    );
-  };
-
-  const SmSelect = ({ label, value, onChange, options, required, placeholder }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-      </label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
-        <option value="" style={{ background: C.dark }}>{placeholder || "Select..."}</option>
-        {options.map((o) => <option key={o} value={o} style={{ background: C.dark }}>{o}</option>)}
-      </select>
-    </div>
-  );
-
-  const SmBadge = ({ name, color }) => (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: color + "25", color, border: `1px solid ${color}40` }}>
-      <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />{name}
-    </span>
-  );
-
   // ── State ──
   const [step, setStep] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -3881,13 +3629,13 @@ function QTPSubmissionSubForm({ onBack }) {
             Your {t?.label.toLowerCase()} submission has been received.<br />Our team will review it for the next Turtle Press edition.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            <SmBadge name="🐢 QTP" color="#0079bf" />
-            {form.submissionType === "birthday" && <SmBadge name="🎂 Birthday" color="#ff78cb" />}
-            {form.submissionType === "anniversary" && <SmBadge name="💍 Anniversary" color="#c377e0" />}
-            {form.submissionType === "birth" && <SmBadge name="👶 Birth" color="#51e898" />}
-            {form.submissionType === "wedding" && <SmBadge name="💒 Wedding" color="#f2d600" />}
+            <FormBadge name="🐢 QTP" color="#0079bf" />
+            {form.submissionType === "birthday" && <FormBadge name="🎂 Birthday" color="#ff78cb" />}
+            {form.submissionType === "anniversary" && <FormBadge name="💍 Anniversary" color="#c377e0" />}
+            {form.submissionType === "birth" && <FormBadge name="👶 Birth" color="#51e898" />}
+            {form.submissionType === "wedding" && <FormBadge name="💒 Wedding" color="#f2d600" />}
           </div>
-          <SmGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
+          <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
             {[
               ["Ticket", ticketNumber, true],
               ["Type", `${t?.icon} ${t?.label}`],
@@ -3900,7 +3648,7 @@ function QTPSubmissionSubForm({ onBack }) {
                 <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit" }}>{v}</span>
               </div>
             ))}
-          </SmGlassCard>
+          </FormGlassCard>
           <p style={{ fontSize: 12, color: C.textDim, lineHeight: 1.6, maxWidth: 340, margin: "0 auto" }}>{DEADLINE_NOTICE}</p>
           <button onClick={() => { setSubmitted(false); setStep(0); setForm({ ...form, submissionType: null, message: "", from: "" }); setPhotoAgreed(false); }} style={{ ...SM.btn, marginTop: 28 }}>Submit Another</button>
         </div>
@@ -3934,8 +3682,8 @@ function QTPSubmissionSubForm({ onBack }) {
           <h2 style={SM.stepTitle}>What's your name?</h2>
           <p style={SM.stepDesc}>Let us know who's submitting.</p>
           <div style={{ display: "flex", gap: 12 }}>
-            <SmInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
-            <SmInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
+            <FormInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
+            <FormInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
           </div>
           <div style={SM.navRow}>
             <button onClick={() => goTo(0)} style={SM.btnBack}>← Back</button>
@@ -3948,7 +3696,7 @@ function QTPSubmissionSubForm({ onBack }) {
         <div style={SM.stepWrap}>
           <h2 style={SM.stepTitle}>Tribal ID Number</h2>
           <p style={SM.stepDesc}>Enter your 4-digit tribal identification number.</p>
-          <SmInput label="Tribal ID #" value={form.tribalId} required onChange={(v) => { if (/^\d{0,4}$/.test(v)) u("tribalId", v); }} placeholder="0000" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.tribalId.length === 4 && goTo(3)} />
+          <FormInput label="Tribal ID #" value={form.tribalId} required onChange={(v) => { if (/^\d{0,4}$/.test(v)) u("tribalId", v); }} placeholder="0000" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.tribalId.length === 4 && goTo(3)} />
           <div style={SM.navRow}>
             <button onClick={() => goTo(1)} style={SM.btnBack}>← Back</button>
             <button onClick={() => goTo(3)} disabled={form.tribalId.length !== 4} style={SM.btn}>Continue →</button>
@@ -3965,13 +3713,13 @@ function QTPSubmissionSubForm({ onBack }) {
               { id: "employee", icon: "🏢", label: "NHBP Employee", desc: "Staff or department member" },
               { id: "member", icon: "👤", label: "Tribal Member", desc: "NHBP community member" },
             ].map((o) => (
-              <SmGlassCard key={o.id} active={form.identity === o.id} onClick={() => u("identity", o.id)} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <FormGlassCard key={o.id} active={form.identity === o.id} onClick={() => u("identity", o.id)} style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <span style={{ fontSize: 28 }}>{o.icon}</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary }}>{o.label}</div>
                   <div style={{ fontSize: 12, color: C.textDim }}>{o.desc}</div>
                 </div>
-              </SmGlassCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={SM.navRow}>
@@ -3987,12 +3735,12 @@ function QTPSubmissionSubForm({ onBack }) {
           <p style={SM.stepDesc}>Choose your adventure 🐢</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
             {SUBMISSION_TYPES.map((t) => (
-              <SmGlassCard key={t.id} active={form.submissionType === t.id} onClick={() => u("submissionType", t.id)}
+              <FormGlassCard key={t.id} active={form.submissionType === t.id} onClick={() => u("submissionType", t.id)}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "18px 12px", textAlign: "center" }}>
                 <span style={{ fontSize: 28, filter: form.submissionType === t.id ? `drop-shadow(0 0 8px ${C.turquoiseGlow})` : "none", transition: "filter 0.3s" }}>{t.icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{t.label}</span>
                 <span style={{ fontSize: 10, color: C.textDim, lineHeight: 1.4 }}>{t.desc}</span>
-              </SmGlassCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={SM.navRow}>
@@ -4011,69 +3759,69 @@ function QTPSubmissionSubForm({ onBack }) {
 
             {form.submissionType === "birthday" && (<>
               <div style={{ display: "flex", gap: 12 }}>
-                <SmInput label="Person's First Name" value={form.bdayFirstName} required onChange={(v) => u("bdayFirstName", v)} placeholder="First" inputRef={inputRef} />
-                <SmInput label="Last Name" value={form.bdayLastName} required onChange={(v) => u("bdayLastName", v)} placeholder="Last" />
+                <FormInput label="Person's First Name" value={form.bdayFirstName} required onChange={(v) => u("bdayFirstName", v)} placeholder="First" inputRef={inputRef} />
+                <FormInput label="Last Name" value={form.bdayLastName} required onChange={(v) => u("bdayLastName", v)} placeholder="Last" />
               </div>
-              <SmInput label="Birth Date" value={form.birthDate} type="date" required onChange={(v) => u("birthDate", v)} />
-              <SmInput label="From" value={form.from} onChange={(v) => u("from", v)} placeholder="Who is this from?" />
-              <SmInput label="Brief Message" value={form.message} onChange={(v) => u("message", v)} placeholder="Happy birthday wishes..." multiline maxWords={40} />
+              <FormInput label="Birth Date" value={form.birthDate} type="date" required onChange={(v) => u("birthDate", v)} />
+              <FormInput label="From" value={form.from} onChange={(v) => u("from", v)} placeholder="Who is this from?" />
+              <FormInput label="Brief Message" value={form.message} onChange={(v) => u("message", v)} placeholder="Happy birthday wishes..." multiline maxWords={40} />
             </>)}
 
             {form.submissionType === "anniversary" && (<>
               <div style={{ display: "flex", gap: 12 }}>
-                <SmInput label="Name One - First" value={form.anniName1First} required onChange={(v) => u("anniName1First", v)} placeholder="First" inputRef={inputRef} />
-                <SmInput label="Last" value={form.anniName1Last} required onChange={(v) => u("anniName1Last", v)} placeholder="Last" />
+                <FormInput label="Name One - First" value={form.anniName1First} required onChange={(v) => u("anniName1First", v)} placeholder="First" inputRef={inputRef} />
+                <FormInput label="Last" value={form.anniName1Last} required onChange={(v) => u("anniName1Last", v)} placeholder="Last" />
               </div>
               <div style={{ display: "flex", gap: 12 }}>
-                <SmInput label="Name Two - First" value={form.anniName2First} required onChange={(v) => u("anniName2First", v)} placeholder="First" />
-                <SmInput label="Last" value={form.anniName2Last} required onChange={(v) => u("anniName2Last", v)} placeholder="Last" />
+                <FormInput label="Name Two - First" value={form.anniName2First} required onChange={(v) => u("anniName2First", v)} placeholder="First" />
+                <FormInput label="Last" value={form.anniName2Last} required onChange={(v) => u("anniName2Last", v)} placeholder="Last" />
               </div>
               <div style={{ display: "flex", gap: 12 }}>
-                <SmSelect label="Month" value={form.anniMonth} required onChange={(v) => u("anniMonth", v)} options={MONTHS} placeholder="Month" />
-                <SmSelect label="Day" value={form.anniDay} required onChange={(v) => u("anniDay", v)} options={Array.from({ length: 31 }, (_, i) => String(i + 1))} placeholder="Day" />
+                <FormSelect label="Month" value={form.anniMonth} required onChange={(v) => u("anniMonth", v)} options={MONTHS} placeholder="Month" />
+                <FormSelect label="Day" value={form.anniDay} required onChange={(v) => u("anniDay", v)} options={Array.from({ length: 31 }, (_, i) => String(i + 1))} placeholder="Day" />
               </div>
-              <SmInput label="From" value={form.from} onChange={(v) => u("from", v)} placeholder="Who is this from?" />
-              <SmInput label="Brief Message" value={form.message} onChange={(v) => u("message", v)} placeholder="Anniversary wishes..." multiline maxWords={40} />
+              <FormInput label="From" value={form.from} onChange={(v) => u("from", v)} placeholder="Who is this from?" />
+              <FormInput label="Brief Message" value={form.message} onChange={(v) => u("message", v)} placeholder="Anniversary wishes..." multiline maxWords={40} />
             </>)}
 
             {form.submissionType === "birth" && (<>
               <div style={{ display: "flex", gap: 12 }}>
-                <SmInput label="Newborn's First Name" value={form.newbornFirst} required onChange={(v) => u("newbornFirst", v)} placeholder="First" inputRef={inputRef} />
-                <SmInput label="Last Name" value={form.newbornLast} required onChange={(v) => u("newbornLast", v)} placeholder="Last" />
+                <FormInput label="Newborn's First Name" value={form.newbornFirst} required onChange={(v) => u("newbornFirst", v)} placeholder="First" inputRef={inputRef} />
+                <FormInput label="Last Name" value={form.newbornLast} required onChange={(v) => u("newbornLast", v)} placeholder="Last" />
               </div>
-              <SmInput label="Date of Birth" value={form.dateOfBirth} type="date" required onChange={(v) => u("dateOfBirth", v)} />
+              <FormInput label="Date of Birth" value={form.dateOfBirth} type="date" required onChange={(v) => u("dateOfBirth", v)} />
               <div style={{ display: "flex", gap: 12 }}>
-                <SmInput label="Mother (optional)" value={form.motherFirst} onChange={(v) => u("motherFirst", v)} placeholder="First" />
-                <SmInput label="Last" value={form.motherLast} onChange={(v) => u("motherLast", v)} placeholder="Last" />
+                <FormInput label="Mother (optional)" value={form.motherFirst} onChange={(v) => u("motherFirst", v)} placeholder="First" />
+                <FormInput label="Last" value={form.motherLast} onChange={(v) => u("motherLast", v)} placeholder="Last" />
               </div>
               <div style={{ display: "flex", gap: 12 }}>
-                <SmInput label="Father (optional)" value={form.fatherFirst} onChange={(v) => u("fatherFirst", v)} placeholder="First" />
-                <SmInput label="Last" value={form.fatherLast} onChange={(v) => u("fatherLast", v)} placeholder="Last" />
+                <FormInput label="Father (optional)" value={form.fatherFirst} onChange={(v) => u("fatherFirst", v)} placeholder="First" />
+                <FormInput label="Last" value={form.fatherLast} onChange={(v) => u("fatherLast", v)} placeholder="Last" />
               </div>
-              <SmInput label="Brief Message" value={form.message} onChange={(v) => u("message", v)} placeholder="Welcome message..." multiline maxWords={40} />
+              <FormInput label="Brief Message" value={form.message} onChange={(v) => u("message", v)} placeholder="Welcome message..." multiline maxWords={40} />
             </>)}
 
             {form.submissionType === "wedding" && (<>
               <div style={{ display: "flex", gap: 12 }}>
-                <SmInput label="Bride - First" value={form.brideFirst} required onChange={(v) => u("brideFirst", v)} placeholder="First" inputRef={inputRef} />
-                <SmInput label="Last" value={form.brideLast} required onChange={(v) => u("brideLast", v)} placeholder="Last" />
+                <FormInput label="Bride - First" value={form.brideFirst} required onChange={(v) => u("brideFirst", v)} placeholder="First" inputRef={inputRef} />
+                <FormInput label="Last" value={form.brideLast} required onChange={(v) => u("brideLast", v)} placeholder="Last" />
               </div>
               <div style={{ display: "flex", gap: 12 }}>
-                <SmInput label="Groom - First" value={form.groomFirst} required onChange={(v) => u("groomFirst", v)} placeholder="First" />
-                <SmInput label="Last" value={form.groomLast} required onChange={(v) => u("groomLast", v)} placeholder="Last" />
+                <FormInput label="Groom - First" value={form.groomFirst} required onChange={(v) => u("groomFirst", v)} placeholder="First" />
+                <FormInput label="Last" value={form.groomLast} required onChange={(v) => u("groomLast", v)} placeholder="Last" />
               </div>
-              <SmInput label="Wedding Date" value={form.weddingDate} type="date" required onChange={(v) => u("weddingDate", v)} />
-              <SmInput label="Brief Message" value={form.message} onChange={(v) => u("message", v)} placeholder="Wedding wishes..." multiline maxWords={40} />
+              <FormInput label="Wedding Date" value={form.weddingDate} type="date" required onChange={(v) => u("weddingDate", v)} />
+              <FormInput label="Brief Message" value={form.message} onChange={(v) => u("message", v)} placeholder="Wedding wishes..." multiline maxWords={40} />
             </>)}
 
             {form.submissionType === "photo" && (<>
-              <SmInput label="Names of People in Photo" value={form.photoPeopleNames} required onChange={(v) => u("photoPeopleNames", v)} placeholder="List all people shown" inputRef={inputRef} multiline />
-              <SmInput label="Photo Credit" value={form.photoCredit} onChange={(v) => u("photoCredit", v)} placeholder="Photographer name" />
-              <SmInput label="Brief Description" value={form.message} onChange={(v) => u("message", v)} placeholder="What's in the photo, when/where taken..." multiline maxWords={40} />
+              <FormInput label="Names of People in Photo" value={form.photoPeopleNames} required onChange={(v) => u("photoPeopleNames", v)} placeholder="List all people shown" inputRef={inputRef} multiline />
+              <FormInput label="Photo Credit" value={form.photoCredit} onChange={(v) => u("photoCredit", v)} placeholder="Photographer name" />
+              <FormInput label="Brief Description" value={form.message} onChange={(v) => u("message", v)} placeholder="What's in the photo, when/where taken..." multiline maxWords={40} />
             </>)}
 
             {form.submissionType === "other" && (<>
-              <SmInput label="Describe Your Request" value={form.message} required onChange={(v) => u("message", v)} placeholder="Tell us what you'd like to submit..." inputRef={inputRef} multiline maxWords={40} />
+              <FormInput label="Describe Your Request" value={form.message} required onChange={(v) => u("message", v)} placeholder="Tell us what you'd like to submit..." inputRef={inputRef} multiline maxWords={40} />
             </>)}
 
             <div style={SM.navRow}>
@@ -4088,14 +3836,14 @@ function QTPSubmissionSubForm({ onBack }) {
         <div style={SM.stepWrap}>
           <h2 style={SM.stepTitle}>📸 Photo Upload</h2>
           <p style={SM.stepDesc}>Optional — attach a photo to your submission.</p>
-          <SmGlassCard style={{ textAlign: "center", padding: "32px 20px", marginBottom: 20, border: `2px dashed ${C.border}` }}>
+          <FormGlassCard style={{ textAlign: "center", padding: "32px 20px", marginBottom: 20, border: `2px dashed ${C.border}` }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>📁</div>
             <p style={{ fontSize: 14, color: C.textSecondary, marginBottom: 4 }}>Drag & drop or click to upload</p>
             <p style={{ fontSize: 11, color: C.textDim }}>300KB – 5MB • JPG, PNG, PDF</p>
             <p style={{ fontSize: 11, color: C.textDim, marginTop: 8 }}>Trouble uploading? Email to <span style={{ color: C.turquoiseLight }}>turtlepress@nhbp-nsn.gov</span></p>
-          </SmGlassCard>
+          </FormGlassCard>
           {form.submissionType !== "photo" && (
-            <SmInput label="Photo Credit" value={form.photoCredit} onChange={(v) => u("photoCredit", v)} placeholder="Photographer name" />
+            <FormInput label="Photo Credit" value={form.photoCredit} onChange={(v) => u("photoCredit", v)} placeholder="Photographer name" />
           )}
           <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", marginBottom: 20 }}>
             <p style={{ fontSize: 11, color: C.textDim, lineHeight: 1.7, marginBottom: 12 }}>{PHOTO_DISCLAIMER}</p>
@@ -4117,8 +3865,8 @@ function QTPSubmissionSubForm({ onBack }) {
         <div style={SM.stepWrap}>
           <h2 style={SM.stepTitle}>Contact Information</h2>
           <p style={SM.stepDesc}>In case we need to reach you about your submission.</p>
-          <SmInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.email.includes("@") && goTo(8)} />
-          <SmInput label="Phone Number" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" onKeyDown={(e) => e.key === "Enter" && goTo(8)} />
+          <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.email.includes("@") && goTo(8)} />
+          <FormInput label="Phone Number" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" onKeyDown={(e) => e.key === "Enter" && goTo(8)} />
           <div style={SM.navRow}>
             <button onClick={() => goTo(6)} style={SM.btnBack}>← Back</button>
             <button onClick={() => goTo(8)} disabled={!form.email.includes("@")} style={SM.btn}>Review →</button>
@@ -4146,14 +3894,14 @@ function QTPSubmissionSubForm({ onBack }) {
           <div style={SM.stepWrap}>
             <h2 style={SM.stepTitle}>Review Your Submission</h2>
             <p style={SM.stepDesc}>Make sure everything looks good.</p>
-            <SmGlassCard style={{ marginBottom: 16 }}>
+            <FormGlassCard style={{ marginBottom: 16 }}>
               {reviewItems.map(([k, v], i) => (
                 <div key={k + i} style={{ paddingBottom: 12, marginBottom: i < reviewItems.length - 1 ? 12 : 0, borderBottom: i < reviewItems.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{k}</div>
                   <div style={{ fontSize: 14, color: C.textPrimary, lineHeight: 1.5 }}>{v}</div>
                 </div>
               ))}
-            </SmGlassCard>
+            </FormGlassCard>
             <p style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6, marginBottom: 24, textAlign: "center" }}>
               Submission does not guarantee placement. Placement is at the discretion of the editors and Tribal Council.
             </p>
@@ -4192,19 +3940,7 @@ function QTPSubmissionSubForm({ onBack }) {
 //  QTP ARTICLE / STORY SUB-FORM
 // ===========================================================
 function QTPArticleSubForm({ onBack }) {
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
+  const C = FC;
 
   const AR_DEPTS = [
     { value: "Administration", label: "Administration" },
@@ -4250,89 +3986,6 @@ function QTPArticleSubForm({ onBack }) {
   const DEADLINE_NOTICE = `Article submissions are due the 1st of each month for the next edition. Submission does not guarantee placement — placement is at the discretion of the editors and Tribal Council.`;
 
   // ── Sub-components ──
-  const ArGlassCard = ({ children, active, onClick, style: s = {} }) => {
-    const [h, setH] = useState(false);
-    return (
-      <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-        style={{
-          background: active ? `linear-gradient(135deg, ${C.turquoise}18, ${C.turquoise}08)` : h ? "rgba(255,255,255,0.04)" : C.glass,
-          border: `1px solid ${active ? C.turquoise + "50" : h ? "rgba(255,255,255,0.12)" : C.border}`,
-          borderRadius: 14, padding: "16px 20px", cursor: onClick ? "pointer" : "default",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: active ? `0 8px 32px ${C.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.06)` : h ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
-          transform: h && onClick ? "translateY(-1px)" : "translateY(0)",
-          position: "relative", overflow: "hidden", ...s,
-        }}>
-        {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${C.turquoise}60, transparent)` }} />}
-        {children}
-      </div>
-    );
-  };
-
-  const ArInput = ({ label, value, onChange, placeholder, type = "text", required, inputRef: ref, onKeyDown, multiline, maxWords }) => {
-    const wc = multiline && maxWords ? value.trim().split(/\s+/).filter(Boolean).length : 0;
-    return (
-      <div style={{ marginBottom: 20, flex: 1 }}>
-        <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-          {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-        </label>
-        {multiline ? (
-          <div style={{ position: "relative" }}>
-            <textarea ref={ref} value={value} rows={4} placeholder={placeholder} onKeyDown={onKeyDown}
-              onChange={(e) => {
-                if (maxWords) { const w = e.target.value.trim().split(/\s+/).filter(Boolean); if (w.length <= maxWords || e.target.value.length < value.length) onChange(e.target.value); }
-                else onChange(e.target.value);
-              }}
-              style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", resize: "vertical", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-              onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-              onBlur={(e) => e.target.style.borderColor = C.border}
-            />
-            {maxWords && <div style={{ position: "absolute", bottom: 8, right: 12, fontSize: 11, color: wc >= maxWords ? C.maroonLight : C.textDim }}>{wc}/{maxWords} words</div>}
-          </div>
-        ) : (
-          <input ref={ref} type={type} value={value} placeholder={placeholder} onKeyDown={onKeyDown}
-            onChange={(e) => onChange(e.target.value)}
-            style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-            onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-            onBlur={(e) => e.target.style.borderColor = C.border}
-          />
-        )}
-      </div>
-    );
-  };
-
-  const ArSelect = ({ label, value, onChange, options, required, placeholder }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-      </label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
-        <option value="" style={{ background: C.dark }}>{placeholder || "Select..."}</option>
-        {options.map((o) => <option key={o} value={o} style={{ background: C.dark }}>{o}</option>)}
-      </select>
-    </div>
-  );
-
-  const ArDeptSelect = ({ value, onChange }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        Department <span style={{ color: C.turquoise }}>*</span>
-      </label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
-        <option value="" style={{ background: C.dark }}>Select department...</option>
-        {AR_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
-      </select>
-    </div>
-  );
-
-  const ArBadge = ({ name, color }) => (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: color + "25", color, border: `1px solid ${color}40` }}>
-      <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />{name}
-    </span>
-  );
-
   // ── State ──
   const [step, setStep] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -4416,11 +4069,11 @@ function QTPArticleSubForm({ onBack }) {
             Your article submission has been received and routed<br />to the Communications Hub for review.
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            <ArBadge name="🐢 QTP" color="#0079bf" />
-            <ArBadge name="📝 Article" color="#00c2e0" />
-            {form.submissionFormat === "lead" && <ArBadge name="💡 Story Lead" color="#f2d600" />}
+            <FormBadge name="🐢 QTP" color="#0079bf" />
+            <FormBadge name="📝 Article" color="#00c2e0" />
+            {form.submissionFormat === "lead" && <FormBadge name="💡 Story Lead" color="#f2d600" />}
           </div>
-          <ArGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
+          <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
             {[
               ["Ticket", ticketNumber, true],
               ["Format", `${fmt?.icon} ${fmt?.label}`],
@@ -4434,7 +4087,7 @@ function QTPArticleSubForm({ onBack }) {
                 <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit", textAlign: "right", maxWidth: "60%" }}>{v}</span>
               </div>
             ))}
-          </ArGlassCard>
+          </FormGlassCard>
           <p style={{ fontSize: 12, color: C.textDim, lineHeight: 1.6, maxWidth: 340, margin: "0 auto" }}>{DEADLINE_NOTICE}</p>
           <button onClick={() => { setSubmitted(false); setStep(0); setPhotoAgreed(false); }} style={{ ...AR.btn, marginTop: 28 }}>Submit Another</button>
         </div>
@@ -4468,8 +4121,8 @@ function QTPArticleSubForm({ onBack }) {
           <h2 style={AR.stepTitle}>What's your name?</h2>
           <p style={AR.stepDesc}>Let us know who's submitting.</p>
           <div style={{ display: "flex", gap: 12 }}>
-            <ArInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
-            <ArInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
+            <FormInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
+            <FormInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" onKeyDown={(e) => e.key === "Enter" && form.firstName && form.lastName && goTo(2)} />
           </div>
           <div style={AR.navRow}>
             <button onClick={() => goTo(0)} style={AR.btnBack}>← Back</button>
@@ -4482,7 +4135,7 @@ function QTPArticleSubForm({ onBack }) {
         <div style={AR.stepWrap}>
           <h2 style={AR.stepTitle}>Tribal ID Number</h2>
           <p style={AR.stepDesc}>Enter your 4-digit tribal identification number.</p>
-          <ArInput label="Tribal ID #" value={form.tribalId} required onChange={(v) => { if (/^\d{0,4}$/.test(v)) u("tribalId", v); }} placeholder="0000" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.tribalId.length === 4 && goTo(3)} />
+          <FormInput label="Tribal ID #" value={form.tribalId} required onChange={(v) => { if (/^\d{0,4}$/.test(v)) u("tribalId", v); }} placeholder="0000" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.tribalId.length === 4 && goTo(3)} />
           <div style={AR.navRow}>
             <button onClick={() => goTo(1)} style={AR.btnBack}>← Back</button>
             <button onClick={() => goTo(3)} disabled={form.tribalId.length !== 4} style={AR.btn}>Continue →</button>
@@ -4499,13 +4152,13 @@ function QTPArticleSubForm({ onBack }) {
               { id: "employee", icon: "🏢", label: "NHBP Employee", desc: "Staff or department member" },
               { id: "member", icon: "👤", label: "Tribal Member", desc: "NHBP community member" },
             ].map((o) => (
-              <ArGlassCard key={o.id} active={form.identity === o.id} onClick={() => u("identity", o.id)} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <FormGlassCard key={o.id} active={form.identity === o.id} onClick={() => u("identity", o.id)} style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <span style={{ fontSize: 28 }}>{o.icon}</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary }}>{o.label}</div>
                   <div style={{ fontSize: 12, color: C.textDim }}>{o.desc}</div>
                 </div>
-              </ArGlassCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={AR.navRow}>
@@ -4522,9 +4175,9 @@ function QTPArticleSubForm({ onBack }) {
           <div style={AR.stepWrap}>
             <h2 style={AR.stepTitle}>Department</h2>
             <p style={AR.stepDesc}>Which department is this submission from?</p>
-            <ArDeptSelect value={form.department} onChange={(v) => u("department", v)} />
+            <FormDeptSelect options={AR_DEPTS} value={form.department} onChange={(v) => u("department", v)} />
             {form.department === "Committees" && (
-              <ArSelect label="Which Committee" value={form.committee} onChange={(v) => u("committee", v)} options={COMMITTEES} placeholder="Select committee" />
+              <FormSelect label="Which Committee" value={form.committee} onChange={(v) => u("committee", v)} options={COMMITTEES} placeholder="Select committee" />
             )}
             <div style={AR.navRow}>
               <button onClick={() => goTo(3)} style={AR.btnBack}>← Back</button>
@@ -4548,12 +4201,12 @@ function QTPArticleSubForm({ onBack }) {
             <p style={AR.stepDesc}>Choose the format that fits your content.</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
               {SUBMISSION_FORMATS.map((f) => (
-                <ArGlassCard key={f.id} active={form.submissionFormat === f.id} onClick={() => u("submissionFormat", f.id)}
+                <FormGlassCard key={f.id} active={form.submissionFormat === f.id} onClick={() => u("submissionFormat", f.id)}
                   style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "18px 12px", textAlign: "center" }}>
                   <span style={{ fontSize: 28, filter: form.submissionFormat === f.id ? `drop-shadow(0 0 8px ${C.turquoiseGlow})` : "none", transition: "filter 0.3s" }}>{f.icon}</span>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{f.label}</span>
                   <span style={{ fontSize: 10, color: C.textDim, lineHeight: 1.4 }}>{f.desc}</span>
-                </ArGlassCard>
+                </FormGlassCard>
               ))}
             </div>
             <div style={AR.navRow}>
@@ -4570,30 +4223,30 @@ function QTPArticleSubForm({ onBack }) {
               <h2 style={AR.stepTitle}>{isLead ? "💡 Story Lead Details" : "📝 Article Details"}</h2>
               <p style={AR.stepDesc}>{isLead ? "Tell us what's newsworthy." : "Fill in the details for your article."}</p>
               {isLead ? (<>
-                <ArInput label="What's the story?" value={form.storyDescription} required onChange={(v) => u("storyDescription", v)} placeholder="Describe what's happening..." inputRef={inputRef} multiline />
-                <ArInput label="Why is it newsworthy?" value={form.whyNewsworthy} onChange={(v) => u("whyNewsworthy", v)} placeholder="Impact on community, timeliness, cultural significance..." multiline />
-                <ArInput label="Who's involved?" value={form.interviewNames} onChange={(v) => u("interviewNames", v)} placeholder="Key people, contact info for interviews" multiline />
-                <ArInput label="When is this happening?" value={form.whenHappening} onChange={(v) => u("whenHappening", v)} placeholder="Date, timeframe, or if it's time-sensitive" />
-                <ArInput label="Additional Notes" value={form.additionalNotes} onChange={(v) => u("additionalNotes", v)} placeholder="Anything else" multiline />
+                <FormInput label="What's the story?" value={form.storyDescription} required onChange={(v) => u("storyDescription", v)} placeholder="Describe what's happening..." inputRef={inputRef} multiline />
+                <FormInput label="Why is it newsworthy?" value={form.whyNewsworthy} onChange={(v) => u("whyNewsworthy", v)} placeholder="Impact on community, timeliness, cultural significance..." multiline />
+                <FormInput label="Who's involved?" value={form.interviewNames} onChange={(v) => u("interviewNames", v)} placeholder="Key people, contact info for interviews" multiline />
+                <FormInput label="When is this happening?" value={form.whenHappening} onChange={(v) => u("whenHappening", v)} placeholder="Date, timeframe, or if it's time-sensitive" />
+                <FormInput label="Additional Notes" value={form.additionalNotes} onChange={(v) => u("additionalNotes", v)} placeholder="Anything else" multiline />
               </>) : (<>
                 <div style={{ display: "flex", gap: 12 }}>
-                  <ArInput label="Written By - First" value={form.articleWrittenByFirst} onChange={(v) => u("articleWrittenByFirst", v)} placeholder="First" inputRef={inputRef} />
-                  <ArInput label="Last" value={form.articleWrittenByLast} onChange={(v) => u("articleWrittenByLast", v)} placeholder="Last" />
+                  <FormInput label="Written By - First" value={form.articleWrittenByFirst} onChange={(v) => u("articleWrittenByFirst", v)} placeholder="First" inputRef={inputRef} />
+                  <FormInput label="Last" value={form.articleWrittenByLast} onChange={(v) => u("articleWrittenByLast", v)} placeholder="Last" />
                 </div>
-                <ArInput label="Title / Tribal Status" value={form.titleStatus} onChange={(v) => u("titleStatus", v)} placeholder="e.g. Communications Specialist, Tribal Elder" />
-                <ArInput label="Title of Article" value={form.articleTitle} onChange={(v) => u("articleTitle", v)} placeholder="Article title" />
-                <ArInput label="Name of Activity / Event" value={form.activityName} onChange={(v) => u("activityName", v)} placeholder="What the article covers" />
+                <FormInput label="Title / Tribal Status" value={form.titleStatus} onChange={(v) => u("titleStatus", v)} placeholder="e.g. Communications Specialist, Tribal Elder" />
+                <FormInput label="Title of Article" value={form.articleTitle} onChange={(v) => u("articleTitle", v)} placeholder="Article title" />
+                <FormInput label="Name of Activity / Event" value={form.activityName} onChange={(v) => u("activityName", v)} placeholder="What the article covers" />
                 <div style={{ display: "flex", gap: 12 }}>
-                  <ArInput label="Date of Event" value={form.eventDate} type="date" onChange={(v) => u("eventDate", v)} />
-                  <ArInput label="Time" value={form.eventTime} type="time" onChange={(v) => u("eventTime", v)} />
+                  <FormInput label="Date of Event" value={form.eventDate} type="date" onChange={(v) => u("eventDate", v)} />
+                  <FormInput label="Time" value={form.eventTime} type="time" onChange={(v) => u("eventTime", v)} />
                 </div>
-                <ArInput label="Location" value={form.eventLocation} onChange={(v) => u("eventLocation", v)} placeholder="Where it's happening" />
-                <ArInput label="People Willing to be Interviewed" value={form.interviewNames} onChange={(v) => u("interviewNames", v)} placeholder="Names — at least one if possible" multiline />
-                <ArInput label="Interview Contact Info" value={form.interviewContact} onChange={(v) => u("interviewContact", v)} placeholder="Phone or email" />
+                <FormInput label="Location" value={form.eventLocation} onChange={(v) => u("eventLocation", v)} placeholder="Where it's happening" />
+                <FormInput label="People Willing to be Interviewed" value={form.interviewNames} onChange={(v) => u("interviewNames", v)} placeholder="Names — at least one if possible" multiline />
+                <FormInput label="Interview Contact Info" value={form.interviewContact} onChange={(v) => u("interviewContact", v)} placeholder="Phone or email" />
                 {(form.submissionFormat === "article" || form.submissionFormat === "both") && (
-                  <ArInput label="Article Content" value={form.articleContent} onChange={(v) => u("articleContent", v)} placeholder="Paste your article here, or upload a file on the next step" multiline />
+                  <FormInput label="Article Content" value={form.articleContent} onChange={(v) => u("articleContent", v)} placeholder="Paste your article here, or upload a file on the next step" multiline />
                 )}
-                <ArInput label="Additional Notes" value={form.additionalNotes} onChange={(v) => u("additionalNotes", v)} placeholder="Anything else we should know" multiline />
+                <FormInput label="Additional Notes" value={form.additionalNotes} onChange={(v) => u("additionalNotes", v)} placeholder="Anything else we should know" multiline />
               </>)}
               <div style={AR.navRow}>
                 <button onClick={() => goTo(formatStep)} style={AR.btnBack}>← Back</button>
@@ -4607,15 +4260,15 @@ function QTPArticleSubForm({ onBack }) {
           <div style={AR.stepWrap}>
             <h2 style={AR.stepTitle}>📸 Files & Photos</h2>
             <p style={AR.stepDesc}>Upload photos, articles, or supporting files.</p>
-            <ArGlassCard style={{ textAlign: "center", padding: "32px 20px", marginBottom: 20, border: `2px dashed ${C.border}` }}>
+            <FormGlassCard style={{ textAlign: "center", padding: "32px 20px", marginBottom: 20, border: `2px dashed ${C.border}` }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📁</div>
               <p style={{ fontSize: 14, color: C.textSecondary, marginBottom: 4 }}>Drag & drop or click to upload</p>
               <p style={{ fontSize: 11, color: C.textDim }}>Photos, documents, PDFs • Up to 5MB each</p>
               <p style={{ fontSize: 11, color: C.textDim, marginTop: 8 }}>You may upload multiple files</p>
-            </ArGlassCard>
+            </FormGlassCard>
             {(form.submissionFormat === "photo" || form.submissionFormat === "both") && (<>
-              <ArInput label="Names of People in Photos" value={form.photoPeopleNames} onChange={(v) => u("photoPeopleNames", v)} placeholder="List all people shown" multiline />
-              <ArInput label="Photo Credit" value={form.photoCredit} onChange={(v) => u("photoCredit", v)} placeholder="Photographer name" />
+              <FormInput label="Names of People in Photos" value={form.photoPeopleNames} onChange={(v) => u("photoPeopleNames", v)} placeholder="List all people shown" multiline />
+              <FormInput label="Photo Credit" value={form.photoCredit} onChange={(v) => u("photoCredit", v)} placeholder="Photographer name" />
             </>)}
             <div style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", marginBottom: 20 }}>
               <p style={{ fontSize: 11, color: C.textDim, lineHeight: 1.7, marginBottom: 12 }}>{PHOTO_DISCLAIMER}</p>
@@ -4637,8 +4290,8 @@ function QTPArticleSubForm({ onBack }) {
           <div style={AR.stepWrap}>
             <h2 style={AR.stepTitle}>Contact Information</h2>
             <p style={AR.stepDesc}>In case we need to reach you.</p>
-            <ArInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.email.includes("@") && goTo(reviewStep)} />
-            <ArInput label="Phone Number" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" onKeyDown={(e) => e.key === "Enter" && goTo(reviewStep)} />
+            <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.email.includes("@") && goTo(reviewStep)} />
+            <FormInput label="Phone Number" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" onKeyDown={(e) => e.key === "Enter" && goTo(reviewStep)} />
             <div style={AR.navRow}>
               <button onClick={() => goTo(photoStep)} style={AR.btnBack}>← Back</button>
               <button onClick={() => goTo(reviewStep)} disabled={!form.email.includes("@")} style={AR.btn}>Review →</button>
@@ -4667,14 +4320,14 @@ function QTPArticleSubForm({ onBack }) {
             <div style={AR.stepWrap}>
               <h2 style={AR.stepTitle}>Review Your Submission</h2>
               <p style={AR.stepDesc}>Make sure everything looks good.</p>
-              <ArGlassCard style={{ marginBottom: 16 }}>
+              <FormGlassCard style={{ marginBottom: 16 }}>
                 {items.map(([k, v], i) => (
                   <div key={k + i} style={{ paddingBottom: 12, marginBottom: i < items.length - 1 ? 12 : 0, borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" }}>
                     <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{k}</div>
                     <div style={{ fontSize: 14, color: k === "Routes To" ? C.turquoiseLight : C.textPrimary, lineHeight: 1.5 }}>{v}</div>
                   </div>
                 ))}
-              </ArGlassCard>
+              </FormGlassCard>
               <p style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6, marginBottom: 24, textAlign: "center" }}>{DEADLINE_NOTICE}</p>
               <div style={AR.navRow}>
                 <button onClick={() => goTo(contactStep)} style={AR.btnBack}>← Back</button>
@@ -4713,19 +4366,7 @@ function QTPArticleSubForm({ onBack }) {
 //  GENERAL / OTHER REQUEST FORM
 // ===========================================================
 function GeneralRequestForm({ onBackToPortal }) {
-  const C = {
-    dark: "#0a0e14", darkCard: "#111820",
-    turquoise: "#40b5ad", turquoiseLight: "#5fcec6",
-    turquoiseGlow: "rgba(64, 181, 173, 0.3)",
-    maroon: "#6b2737", maroonLight: "#8a3a4d",
-    gold: "#c9a84c", goldLight: "#e0c76e",
-    green: "#2d6a4f", greenLight: "#40916c",
-    textPrimary: "rgba(255,255,255,0.92)",
-    textSecondary: "rgba(255,255,255,0.55)",
-    textDim: "rgba(255,255,255,0.3)",
-    border: "rgba(255,255,255,0.08)",
-    glass: "rgba(255,255,255,0.03)",
-  };
+  const C = FC;
 
   const GR_DEPTS = [
     { value: "Administration", label: "Administration" },
@@ -4769,67 +4410,6 @@ function GeneralRequestForm({ onBackToPortal }) {
   ];
 
   // ── Local sub-components ──
-  const GrGlassCard = ({ children, active, onClick, style: s = {} }) => {
-    const [h, setH] = useState(false);
-    return (
-      <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
-        style={{
-          background: active ? `linear-gradient(135deg, ${C.turquoise}18, ${C.turquoise}08)` : h ? "rgba(255,255,255,0.04)" : C.glass,
-          border: `1px solid ${active ? C.turquoise + "50" : h ? "rgba(255,255,255,0.12)" : C.border}`,
-          borderRadius: 14, padding: "16px 20px", cursor: onClick ? "pointer" : "default",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          boxShadow: active ? `0 8px 32px ${C.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.06)` : h ? "0 4px 16px rgba(0,0,0,0.2)" : "none",
-          transform: h && onClick ? "translateY(-1px)" : "translateY(0)",
-          position: "relative", overflow: "hidden", ...s,
-        }}>
-        {active && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${C.turquoise}60, transparent)` }} />}
-        {children}
-      </div>
-    );
-  };
-
-  const GrInput = ({ label, value, onChange, placeholder, type = "text", required, inputRef: ref, multiline }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        {label} {required && <span style={{ color: C.turquoise }}>*</span>}
-      </label>
-      {multiline ? (
-        <textarea ref={ref} value={value} rows={4} placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", resize: "vertical", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-          onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-          onBlur={(e) => e.target.style.borderColor = C.border}
-        />
-      ) : (
-        <input ref={ref} type={type} value={value} placeholder={placeholder}
-          onChange={(e) => onChange(e.target.value)}
-          style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", transition: "border-color 0.3s", boxSizing: "border-box" }}
-          onFocus={(e) => e.target.style.borderColor = C.turquoise + "60"}
-          onBlur={(e) => e.target.style.borderColor = C.border}
-        />
-      )}
-    </div>
-  );
-
-  const GrDeptSelect = ({ value, onChange }) => (
-    <div style={{ marginBottom: 20, flex: 1 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: C.textSecondary, marginBottom: 8, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-        Department <span style={{ color: C.turquoise }}>*</span>
-      </label>
-      <select value={value} onChange={(e) => onChange(e.target.value)}
-        style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: value ? C.textPrimary : C.textDim, fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", appearance: "none", cursor: "pointer", backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 5l3 3 3-3' stroke='%2340b5ad' stroke-width='1.5' fill='none'/%3E%3C/svg%3E")`, backgroundRepeat: "no-repeat", backgroundPosition: "right 16px center" }}>
-        <option value="" style={{ background: C.dark }}>Select department...</option>
-        {GR_DEPTS.map(d => <option key={d.value} value={d.value} style={{ background: C.dark }}>{d.label}</option>)}
-      </select>
-    </div>
-  );
-
-  const GrBadge = ({ name, color }) => (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 4, fontSize: 11, fontWeight: 600, background: color + "25", color, border: `1px solid ${color}40` }}>
-      <span style={{ width: 8, height: 8, borderRadius: 2, background: color }} />{name}
-    </span>
-  );
-
   // ── State ──
   const [step, setStep] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -4888,24 +4468,24 @@ function GeneralRequestForm({ onBackToPortal }) {
           <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>Miigwech!</h2>
           <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>Your request has been received and routed<br />to Communications for review.</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            {form.area === "design" && <GrBadge name="🎨 Design" color="#00c2e0" />}
-            {form.area === "content" && <GrBadge name="✍️ Content" color="#51e898" />}
-            {form.area === "tech" && <GrBadge name="💻 Tech" color="#c377e0" />}
-            {form.area === "print" && <GrBadge name="🖨️ Print" color="#0079bf" />}
-            {form.area === "question" && <GrBadge name="❓ Question" color="#f2d600" />}
-            {form.priority === "low" && <GrBadge name="🟢 Low" color="#61bd4f" />}
-            {form.priority === "medium" && <GrBadge name="🟡 Medium" color="#f2d600" />}
-            {form.priority === "high" && <GrBadge name="🟠 High" color="#ff9f1a" />}
-            {form.priority === "urgent" && <GrBadge name="🔴 Urgent" color="#eb5a46" />}
+            {form.area === "design" && <FormBadge name="🎨 Design" color="#00c2e0" />}
+            {form.area === "content" && <FormBadge name="✍️ Content" color="#51e898" />}
+            {form.area === "tech" && <FormBadge name="💻 Tech" color="#c377e0" />}
+            {form.area === "print" && <FormBadge name="🖨️ Print" color="#0079bf" />}
+            {form.area === "question" && <FormBadge name="❓ Question" color="#f2d600" />}
+            {form.priority === "low" && <FormBadge name="🟢 Low" color="#61bd4f" />}
+            {form.priority === "medium" && <FormBadge name="🟡 Medium" color="#f2d600" />}
+            {form.priority === "high" && <FormBadge name="🟠 High" color="#ff9f1a" />}
+            {form.priority === "urgent" && <FormBadge name="🔴 Urgent" color="#eb5a46" />}
           </div>
-          <GrGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
+          <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
             {[["Ticket", ticketNumber, true], ["Category", `${areaObj?.icon} ${areaObj?.label}`], ["Subject", form.subject], ["By", `${form.firstName} ${form.lastName}`], ["Submitted", submissionDate]].map(([k, v, accent], i) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < 4 ? 10 : 0 }}>
                 <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
                 <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit", textAlign: "right", maxWidth: "60%" }}>{v}</span>
               </div>
             ))}
-          </GrGlassCard>
+          </FormGlassCard>
           <button onClick={() => { setSubmitted(false); setStep(0); }} style={{ ...GR.btn, marginTop: 20 }}>Submit Another Request</button>
         </div>
       </div>
@@ -4932,13 +4512,13 @@ function GeneralRequestForm({ onBackToPortal }) {
           <h2 style={GR.stepTitle}>Who's requesting?</h2>
           <p style={GR.stepDesc}>Let us know who you are so we can follow up.</p>
           <div style={{ display: "flex", gap: 12 }}>
-            <GrInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} />
-            <GrInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" />
+            <FormInput label="First Name" value={form.firstName} required onChange={(v) => u("firstName", v)} placeholder="First" inputRef={inputRef} />
+            <FormInput label="Last Name" value={form.lastName} required onChange={(v) => u("lastName", v)} placeholder="Last" />
           </div>
-          <GrDeptSelect value={form.department} onChange={(v) => u("department", v)} />
+          <FormDeptSelect options={GR_DEPTS} value={form.department} onChange={(v) => u("department", v)} />
           <div style={{ display: "flex", gap: 12 }}>
-            <GrInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
-            <GrInput label="Phone" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" />
+            <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
+            <FormInput label="Phone" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" />
           </div>
           <div style={GR.navRow}>
             <button onClick={() => goTo(0)} style={GR.btnBack}>← Back</button>
@@ -4953,12 +4533,12 @@ function GeneralRequestForm({ onBackToPortal }) {
           <p style={GR.stepDesc}>Your best guess helps us route it faster.</p>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
             {REQUEST_AREAS.map(a => (
-              <GrGlassCard key={a.id} active={form.area === a.id} onClick={() => u("area", a.id)}
+              <FormGlassCard key={a.id} active={form.area === a.id} onClick={() => u("area", a.id)}
                 style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, padding: "18px 12px", textAlign: "center" }}>
                 <span style={{ fontSize: 28, filter: form.area === a.id ? `drop-shadow(0 0 8px ${C.turquoiseGlow})` : "none", transition: "filter 0.3s" }}>{a.icon}</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: C.textPrimary }}>{a.label}</span>
                 <span style={{ fontSize: 10, color: C.textDim, lineHeight: 1.4 }}>{a.desc}</span>
-              </GrGlassCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={GR.navRow}>
@@ -4972,10 +4552,10 @@ function GeneralRequestForm({ onBackToPortal }) {
         <div style={GR.stepWrap}>
           <h2 style={GR.stepTitle}>Tell us what you need</h2>
           <p style={GR.stepDesc}>The more detail, the faster we can help.</p>
-          <GrInput label="Subject / Title" value={form.subject} required onChange={(v) => u("subject", v)} placeholder="Brief summary of your request" inputRef={inputRef} />
-          <GrInput label="Description" value={form.description} required onChange={(v) => u("description", v)} placeholder="Describe what you need, any context, background info..." multiline />
-          <GrInput label="Deadline (if any)" value={form.deadline} type="date" onChange={(v) => u("deadline", v)} />
-          <GrInput label="Anything else?" value={form.notes} onChange={(v) => u("notes", v)} placeholder="Links, references, file names..." multiline />
+          <FormInput label="Subject / Title" value={form.subject} required onChange={(v) => u("subject", v)} placeholder="Brief summary of your request" inputRef={inputRef} />
+          <FormInput label="Description" value={form.description} required onChange={(v) => u("description", v)} placeholder="Describe what you need, any context, background info..." multiline />
+          <FormInput label="Deadline (if any)" value={form.deadline} type="date" onChange={(v) => u("deadline", v)} />
+          <FormInput label="Anything else?" value={form.notes} onChange={(v) => u("notes", v)} placeholder="Links, references, file names..." multiline />
           <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6, padding: "12px 16px", background: "rgba(255,255,255,0.02)", borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 20 }}>
             📁 Need to attach files? Email them to <span style={{ color: C.turquoiseLight }}>communications@nhbp-nsn.gov</span> and reference your ticket number after submitting.
           </div>
@@ -4992,14 +4572,14 @@ function GeneralRequestForm({ onBackToPortal }) {
           <p style={GR.stepDesc}>Helps us prioritize your request.</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
             {PRIORITY_LEVELS.map(p => (
-              <GrGlassCard key={p.id} active={form.priority === p.id} onClick={() => u("priority", p.id)}
+              <FormGlassCard key={p.id} active={form.priority === p.id} onClick={() => u("priority", p.id)}
                 style={{ display: "flex", alignItems: "center", gap: 14 }}>
                 <span style={{ fontSize: 22 }}>{p.icon}</span>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 600, color: C.textPrimary }}>{p.label}</div>
                   <div style={{ fontSize: 12, color: C.textDim }}>{p.desc}</div>
                 </div>
-              </GrGlassCard>
+              </FormGlassCard>
             ))}
           </div>
           <div style={GR.navRow}>
@@ -5024,14 +4604,14 @@ function GeneralRequestForm({ onBackToPortal }) {
           <div style={GR.stepWrap}>
             <h2 style={GR.stepTitle}>Review Your Request</h2>
             <p style={GR.stepDesc}>Make sure everything looks good.</p>
-            <GrGlassCard style={{ marginBottom: 16 }}>
+            <FormGlassCard style={{ marginBottom: 16 }}>
               {items.map(([k, v], i) => (
                 <div key={k + i} style={{ paddingBottom: 12, marginBottom: i < items.length - 1 ? 12 : 0, borderBottom: i < items.length - 1 ? `1px solid ${C.border}` : "none" }}>
                   <div style={{ fontSize: 11, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{k}</div>
                   <div style={{ fontSize: 14, color: C.textPrimary, lineHeight: 1.5 }}>{v}</div>
                 </div>
               ))}
-            </GrGlassCard>
+            </FormGlassCard>
             <div style={GR.navRow}>
               <button onClick={() => goTo(4)} style={GR.btnBack}>← Back</button>
               <button onClick={handleSubmit} style={{ ...GR.btn, background: `linear-gradient(135deg, ${C.turquoise}, ${C.green})` }}>🐢 Submit Request</button>
@@ -5071,7 +4651,7 @@ export default function NHBPPortal() {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [animating, setAnimating] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+  const [theme, setTheme] = useState("night");
   const [formData, setFormData] = useState({
     service: null, name: "", email: "", department: "",
     title: "", description: "", priority: null,
@@ -5087,12 +4667,12 @@ export default function NHBPPortal() {
     }
   }, [step, screen]);
 
-  useEffect(() => {
-    const handler = (e) => {
-      setMousePos({ x: (e.clientX / window.innerWidth) * 100, y: (e.clientY / window.innerHeight) * 100 });
-    };
-    window.addEventListener("mousemove", handler);
-    return () => window.removeEventListener("mousemove", handler);
+  const toggleTheme = useCallback(() => {
+    setTheme(t => {
+      const next = t === "night" ? "day" : "night";
+      document.documentElement.setAttribute("data-theme", next);
+      return next;
+    });
   }, []);
 
   const goNext = () => {
@@ -5135,79 +4715,11 @@ export default function NHBPPortal() {
     if (e.key === "Enter" && canAdvance()) { e.preventDefault(); goNext(); }
   };
 
-  // Animated background
-  const Background = () => (
-    <>
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0,
-        background: `
-          radial-gradient(ellipse 800px 600px at ${mousePos.x}% ${mousePos.y}%, ${NHBP.turquoise}08, transparent),
-          radial-gradient(ellipse 600px 500px at 20% 20%, ${NHBP.maroon}15, transparent),
-          radial-gradient(ellipse 500px 400px at 80% 80%, ${NHBP.turquoise}06, transparent),
-          radial-gradient(ellipse 400px 300px at 60% 30%, ${NHBP.red}04, transparent),
-          linear-gradient(160deg, #08090c 0%, #0d1117 30%, #0c1018 60%, #080a0e 100%)
-        `,
-        transition: "background 0.8s ease",
-      }} />
-      <div style={{
-        position: "fixed", width: 400, height: 400, borderRadius: "50%",
-        background: `radial-gradient(circle, ${NHBP.turquoise}0a 0%, transparent 70%)`,
-        top: -100, right: -100, animation: "float1 25s ease-in-out infinite", zIndex: 0,
-      }} />
-      <div style={{
-        position: "fixed", width: 350, height: 350, borderRadius: "50%",
-        background: `radial-gradient(circle, ${NHBP.maroon}12 0%, transparent 70%)`,
-        bottom: -80, left: -80, animation: "float2 30s ease-in-out infinite", zIndex: 0,
-      }} />
-      <div style={{
-        position: "fixed", width: 200, height: 200, borderRadius: "50%",
-        background: `radial-gradient(circle, ${NHBP.turquoiseLight}06 0%, transparent 70%)`,
-        top: "50%", left: "40%", animation: "float3 20s ease-in-out infinite", zIndex: 0,
-      }} />
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0, opacity: 0.015, pointerEvents: "none",
-        backgroundImage: `linear-gradient(${NHBP.turquoise}20 1px, transparent 1px), linear-gradient(90deg, ${NHBP.turquoise}20 1px, transparent 1px)`,
-        backgroundSize: "60px 60px",
-      }} />
-      <style>{`
-        @keyframes float1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-30px, 20px) scale(1.1); } }
-        @keyframes float2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, -25px) scale(1.05); } }
-        @keyframes float3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-15px, -20px) scale(1.15); } }
-        @keyframes pulseGlow { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        input:focus, textarea:focus { border-color: ${NHBP.turquoise} !important; }
-        input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.2); }
-        ::selection { background: ${NHBP.turquoise}40; }
-      `}</style>
-    </>
-  );
-
   const resetToWelcome = () => {
     setScreen("welcome");
     setStep(0);
     setFormData({ service: null, name: "", email: "", department: "", title: "", description: "", priority: null });
   };
-
-  const BackToPortalButton = ({ onClick }) => (
-    <button
-      onClick={onClick}
-      style={{
-        position: "fixed", top: 16, left: 16, zIndex: 9999,
-        background: "rgba(8,9,12,0.85)", backdropFilter: "blur(16px)",
-        border: `1px solid ${NHBP.turquoise}30`,
-        borderRadius: 10, padding: "8px 16px",
-        color: NHBP.turquoiseLight, fontSize: 12, fontWeight: 600,
-        cursor: "pointer", fontFamily: "Tahoma, sans-serif",
-        transition: "all 0.25s ease",
-        boxShadow: `0 4px 20px rgba(0,0,0,0.4)`,
-      }}
-      onMouseEnter={e => { e.target.style.borderColor = NHBP.turquoise + "60"; e.target.style.boxShadow = `0 4px 24px rgba(0,0,0,0.5), 0 0 12px ${NHBP.turquoiseGlow}`; }}
-      onMouseLeave={e => { e.target.style.borderColor = NHBP.turquoise + "30"; e.target.style.boxShadow = `0 4px 20px rgba(0,0,0,0.4)`; }}
-    >
-      ← Back to Portal
-    </button>
-  );
 
   // ─── ROUTE: VISUAL DESIGNS FORM ─────────────────────────
   if (screen === "visual-designs") {
@@ -5272,53 +4784,69 @@ export default function NHBPPortal() {
   // ─── WELCOME SCREEN ─────────────────────────────────────
   if (screen === "welcome") {
     return (
-      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-        <Background />
+      <div style={{ minHeight: "100vh", color: "var(--text-primary)", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <PortalBackground />
+
+        {/* Nav bar — day/night toggle only */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, padding: "16px 20px", display: "flex", alignItems: "center" }}>
+          <button
+            onClick={toggleTheme}
+            className="glass-full glass-interactive"
+            style={{
+              width: 28, height: 28, borderRadius: "50%",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              cursor: "pointer", fontSize: 14, lineHeight: 1,
+              padding: 0,
+            }}
+          >
+            {theme === "night" ? "☀️" : "🌙"}
+          </button>
+        </div>
+
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", position: "relative", zIndex: 1, animation: "slideUp 0.8s ease" }}>
-          <div style={{
-            width: 90, height: 90, borderRadius: 24, position: "relative",
-            background: `linear-gradient(135deg, ${NHBP.turquoise}20, ${NHBP.maroon}15)`,
-            backdropFilter: "blur(20px)",
-            border: `1px solid ${NHBP.turquoise}30`,
+
+          {/* Turtle icon — 56px glass rounded square */}
+          <div className="glass-full" style={{
+            width: 56, height: 56, borderRadius: 16,
             display: "flex", alignItems: "center", justifyContent: "center",
-            marginBottom: 36,
-            boxShadow: `0 0 60px ${NHBP.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.1)`,
+            marginBottom: 28,
           }}>
-            <span style={{ fontSize: 42, filter: "drop-shadow(0 0 8px rgba(20, 169, 162, 0.5))" }}>🐢</span>
-            <div style={{
-              position: "absolute", inset: -1, borderRadius: 24, padding: 1,
-              background: `linear-gradient(135deg, ${NHBP.turquoise}50, transparent, ${NHBP.turquoise}20)`,
-              WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-              WebkitMaskComposite: "xor", maskComposite: "exclude",
-            }} />
+            <span style={{ fontSize: 28, filter: "drop-shadow(0 0 6px rgba(20, 169, 162, 0.4))" }}>🐢</span>
           </div>
 
+          {/* Title — clean text, no gradient */}
           <h1 style={{
-            fontSize: "clamp(30px, 5vw, 48px)", fontWeight: 300, margin: 0,
-            letterSpacing: "-0.03em", lineHeight: 1.1,
-            background: `linear-gradient(135deg, #ffffff 0%, ${NHBP.turquoiseLight} 50%, ${NHBP.pink} 100%)`,
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
+            fontSize: "var(--text-hero)", fontWeight: "var(--weight-light)", margin: 0,
+            color: "var(--text-primary)", letterSpacing: "-0.01em", lineHeight: 1.2,
           }}>
             NHBP Communications
           </h1>
+
+          {/* Subtitle */}
           <p style={{
-            fontSize: "clamp(16px, 2.5vw, 20px)", color: NHBP.turquoise,
-            fontWeight: 300, margin: "8px 0 0", letterSpacing: "0.08em", textTransform: "uppercase",
+            fontSize: "var(--text-subtitle)", color: "var(--text-accent-bright)",
+            fontWeight: "var(--weight-regular)", margin: "10px 0 0",
+            letterSpacing: "0.3em", textTransform: "uppercase",
           }}>
             Request Portal
           </p>
 
+          {/* Decorative divider */}
           <div style={{
-            width: 80, height: 2, margin: "32px 0",
+            width: 60, height: 1, margin: "24px 0",
             background: `linear-gradient(90deg, transparent, ${NHBP.turquoise}, transparent)`,
           }} />
 
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", lineHeight: 1.8, maxWidth: 380, margin: "0 0 40px" }}>
-            Designs, photos, publications, and more —
-            <br />all in one place. Let’s make something great.
+          {/* Tagline */}
+          <p style={{
+            fontSize: 11, fontWeight: "var(--weight-light)",
+            color: "var(--text-secondary)", margin: "0 0 36px",
+            lineHeight: 1.6,
+          }}>
+            Where departments come to create.
           </p>
 
+          {/* Start a Request CTA — DO NOT MODIFY */}
           <GlassCard
             onClick={() => setScreen("form")}
             style={{ padding: "16px 44px", cursor: "pointer" }}
@@ -5332,9 +4860,6 @@ export default function NHBPPortal() {
             </span>
           </GlassCard>
 
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", marginTop: 20, letterSpacing: "0.1em", textTransform: "uppercase" }}>
-            Takes about 2 minutes
-          </p>
         </div>
       </div>
     );
@@ -5343,8 +4868,8 @@ export default function NHBPPortal() {
   // ─── CONFIRMATION SCREEN ────────────────────────────────
   if (submitted) {
     return (
-      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-        <Background />
+      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <PortalBackground />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", position: "relative", zIndex: 1, animation: "scaleIn 0.5s ease" }}>
           <div style={{
             width: 80, height: 80, borderRadius: "50%", marginBottom: 28,
@@ -5622,8 +5147,8 @@ export default function NHBPPortal() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      <Background />
+    <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <PortalBackground />
 
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.03)", zIndex: 100 }}>
         <div style={{
