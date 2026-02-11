@@ -4802,10 +4802,10 @@ export default function NHBPPortal() {
 
           {/* Subtitle */}
           <p style={{
-            fontSize: "clamp(14px, 1.8vw, 20px)", color: "rgba(20,169,162,0.6)",
+            fontSize: 22, color: "rgba(20,169,162,0.6)",
             fontWeight: 500, margin: 0,
             letterSpacing: "0.5em", textTransform: "uppercase",
-            marginTop: 20,
+            marginTop: 24,
             opacity: 0, animation: "fadeSlide 0.8s ease forwards",
             animationDelay: "0.3s",
           }}>
@@ -4814,7 +4814,7 @@ export default function NHBPPortal() {
 
           {/* Decorative divider */}
           <div style={{
-            width: 80, height: 1, marginTop: 24,
+            width: 100, height: 1, marginTop: 24,
             background: "linear-gradient(90deg, transparent, rgba(20,169,162,0.5), transparent)",
             opacity: 0, animation: "fadeSlide 0.8s ease forwards",
             animationDelay: "0.45s",
@@ -4822,9 +4822,9 @@ export default function NHBPPortal() {
 
           {/* Tagline */}
           <p style={{
-            fontSize: "clamp(14px, 1.5vw, 18px)", fontWeight: 300,
+            fontSize: 18, fontWeight: 300,
             color: "rgba(255,255,255,0.3)", margin: 0,
-            marginTop: 28,
+            marginTop: 32,
             opacity: 0, animation: "fadeSlide 0.8s ease forwards",
             animationDelay: "0.6s",
           }}>
@@ -4835,9 +4835,9 @@ export default function NHBPPortal() {
           <button
             onClick={() => setScreen("form")}
             style={{
-              padding: "18px 52px", fontSize: "clamp(14px, 1.3vw, 16px)", fontWeight: 500,
-              letterSpacing: "0.06em", color: "rgba(20,169,162,0.8)", minWidth: 260,
-              borderRadius: 28, marginTop: 36, cursor: "pointer",
+              padding: "20px 60px", fontSize: 16, fontWeight: 500,
+              letterSpacing: "0.06em", color: "rgba(20,169,162,0.8)", minWidth: 300,
+              borderRadius: 28, marginTop: 40, cursor: "pointer",
               backdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
               WebkitBackdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
               border: "1px solid rgba(20,169,162,0.2)",
