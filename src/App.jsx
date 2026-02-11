@@ -4917,18 +4917,18 @@ export default function NHBPPortal() {
 
   // ─── FORM STEPS ─────────────────────────────────────────
   const slideStyle = {
-    width: "100%", maxWidth: 620,
+    width: "100%", maxWidth: 620, textAlign: "center",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     opacity: animating ? 0 : 1,
     transform: animating ? `translateY(${direction * 24}px)` : "translateY(0)",
   };
 
   const inputStyle = {
-    width: "100%", maxWidth: 440, background: "transparent",
+    width: "100%", maxWidth: 440, margin: "0 auto", background: "transparent",
     border: "none", borderBottom: `2px solid rgba(255,255,255,0.1)`,
     color: "#f0f0f0", fontSize: 22, fontFamily: "Tahoma, 'Segoe UI', sans-serif",
     padding: "14px 0", outline: "none", transition: "border-color 0.3s ease",
-    caretColor: NHBP.turquoise, boxSizing: "border-box",
+    caretColor: NHBP.turquoise, boxSizing: "border-box", textAlign: "left",
   };
 
   const renderStep = () => {
@@ -4941,7 +4941,7 @@ export default function NHBPPortal() {
               What can we help you create?
             </h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Pick the service that best fits your need</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 18, width: "100%", maxWidth: 620, margin: "0 auto" }}>
               {SERVICES.map(s => (
                 <GlassCard
                   key={s.id}
@@ -4978,6 +4978,7 @@ export default function NHBPPortal() {
                   }}
                   style={{
                     padding: "22px 18px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8,
+                    textAlign: "left",
                     opacity: s.status === "coming" ? 0.45 : 1,
                     cursor: s.status === "coming" ? "default" : "pointer",
                   }}
@@ -5042,7 +5043,7 @@ export default function NHBPPortal() {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>04 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Which department are you with?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Select your department</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 540 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 540, justifyContent: "center", margin: "0 auto" }}>
               {DEPARTMENTS.map(d => {
                 const active = formData.department === d;
                 return (
@@ -5085,12 +5086,12 @@ export default function NHBPPortal() {
             <textarea ref={inputRef} placeholder="Describe what you need..."
               value={formData.description} onChange={e => setFormData(d => ({ ...d, description: e.target.value }))}
               style={{
-                width: "100%", maxWidth: 520, minHeight: 140, resize: "vertical",
+                width: "100%", maxWidth: 520, minHeight: 140, resize: "vertical", margin: "0 auto",
                 background: "rgba(255,255,255,0.02)", backdropFilter: "blur(12px)",
                 border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 14,
                 color: "#f0f0f0", fontSize: 15, fontFamily: "Tahoma, sans-serif",
                 padding: "18px", outline: "none", lineHeight: 1.7, caretColor: NHBP.turquoise,
-                boxSizing: "border-box", transition: "border-color 0.3s ease",
+                boxSizing: "border-box", transition: "border-color 0.3s ease", textAlign: "left",
               }}
               rows={5} />
           </div>
@@ -5102,12 +5103,12 @@ export default function NHBPPortal() {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>07 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>How soon do you need this?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>This helps us prioritize across all departments</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440, margin: "0 auto", width: "100%" }}>
               {PRIORITIES.map(p => {
                 const active = formData.priority === p.id;
                 return (
                   <GlassCard key={p.id} active={active} onClick={() => setFormData(d => ({ ...d, priority: p.id }))}
-                    style={{ padding: "18px 22px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer",
+                    style={{ padding: "18px 22px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", textAlign: "left",
                       borderColor: active ? p.color + "50" : undefined,
                       boxShadow: active ? `0 0 24px ${p.color}20` : undefined,
                     }}>
@@ -5152,7 +5153,8 @@ export default function NHBPPortal() {
 
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-        display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 28px",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "18px 28px", maxWidth: 680, margin: "0 auto",
         background: "linear-gradient(0deg, rgba(8,9,12,0.95) 50%, transparent)",
         backdropFilter: "blur(12px)",
       }}>
