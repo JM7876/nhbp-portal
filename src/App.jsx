@@ -1,4 +1,295 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, Component } from "react";
+
+// ═══════════════════════════════════════════════════════════
+//  ERROR BOUNDARY (Task 8)
+// ═══════════════════════════════════════════════════════════
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error, info) {
+    console.error("ErrorBoundary caught:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+          background: "#070a10", fontFamily: "var(--font-primary)", padding: 24,
+        }}>
+          <div style={{
+            maxWidth: 420, width: "100%", textAlign: "center", padding: "48px 32px",
+            backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01))",
+            border: "1px solid rgba(20,169,162,0.2)", borderRadius: 20,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 20 }}>🐢</div>
+            <h2 style={{ fontSize: 22, fontWeight: 300, color: "rgba(255,255,255,0.7)", marginBottom: 12 }}>
+              Something went wrong
+            </h2>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.3)", lineHeight: 1.6, marginBottom: 28 }}>
+              This form encountered an error. The rest of the portal is still working fine.
+            </p>
+            <button
+              onClick={() => {
+                this.setState({ hasError: false });
+                if (this.props.onReturnToServices) this.props.onReturnToServices();
+              }}
+              style={{
+                padding: "14px 32px", borderRadius: 28, cursor: "pointer",
+                backdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
+                border: "1px solid rgba(20,169,162,0.3)",
+                background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+                fontSize: 14, fontWeight: 500, color: "rgba(20,169,162,0.8)",
+                fontFamily: "var(--font-primary)",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
+                transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+              }}
+            >
+              🐢 Return to Services
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BOTTOM FORM NAV (Task 3)
+// ═══════════════════════════════════════════════════════════
+const BottomFormNav = React.memo(({ onBack, onNext, onHome, canGoBack, canGoNext, nextLabel, showNext = true }) => (
+  <div style={{
+    position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
+    display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+    padding: "18px 28px 20px", maxWidth: 680, margin: "0 auto",
+    background: "linear-gradient(0deg, rgba(8,9,12,0.95) 60%, transparent)",
+    backdropFilter: "blur(12px)",
+  }}>
+    {/* Back */}
+    <button onClick={onBack} disabled={!canGoBack}
+      style={{
+        background: "none", border: "none", color: "rgba(255,255,255,0.35)",
+        fontSize: 13, cursor: canGoBack ? "pointer" : "default", padding: "10px 16px",
+        fontFamily: "var(--font-primary)", opacity: canGoBack ? 1 : 0.3,
+        transition: "all 0.2s ease", minWidth: 80,
+      }}>
+      ← Back
+    </button>
+
+    {/* Home — turtle in glass pill */}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+      <button onClick={onHome}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center",
+          width: 44, height: 44, borderRadius: 22, cursor: "pointer",
+          backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+          background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+          border: "1px solid rgba(20,169,162,0.15)",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
+          fontSize: 20, padding: 0,
+          transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+        }}
+        onMouseDown={e => { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.2), 0 0 20px rgba(200,80,130,0.1)"; }}
+        onMouseUp={e => { e.currentTarget.style.borderColor = "rgba(20,169,162,0.15)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)"; }}
+      >
+        🐢
+      </button>
+      <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-primary)", letterSpacing: "0.1em" }}>Home</span>
+    </div>
+
+    {/* Next */}
+    {showNext ? (
+      <button onClick={onNext} disabled={!canGoNext}
+        style={{
+          background: canGoNext ? "rgba(20,169,162,0.12)" : "transparent",
+          border: `1px solid ${canGoNext ? "rgba(20,169,162,0.3)" : "rgba(255,255,255,0.05)"}`,
+          color: canGoNext ? "#1bc4bc" : "rgba(255,255,255,0.2)",
+          fontSize: 13, fontWeight: 600, cursor: canGoNext ? "pointer" : "default",
+          padding: "10px 20px", borderRadius: 10, minWidth: 80,
+          fontFamily: "var(--font-primary)", transition: "all 0.3s ease",
+          boxShadow: canGoNext ? "0 0 16px rgba(20,169,162,0.06)" : "none",
+        }}
+        onMouseDown={e => { if (canGoNext) { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; e.currentTarget.style.boxShadow = "0 0 20px rgba(200,80,130,0.1)"; }}}
+        onMouseUp={e => { if (canGoNext) { e.currentTarget.style.borderColor = "rgba(20,169,162,0.3)"; e.currentTarget.style.boxShadow = "0 0 16px rgba(20,169,162,0.06)"; }}}
+      >
+        {nextLabel || "Next →"}
+      </button>
+    ) : <div style={{ minWidth: 80 }} />}
+  </div>
+));
+
+// ═══════════════════════════════════════════════════════════
+//  LOADING OVERLAY (Task 10)
+// ═══════════════════════════════════════════════════════════
+const SubmitOverlay = ({ status, onRetry }) => {
+  if (status === "idle") return null;
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 9999,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      background: "rgba(7,10,16,0.85)", backdropFilter: "blur(8px)",
+    }}>
+      <div style={{
+        padding: "28px 40px", borderRadius: 20, textAlign: "center",
+        backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+        background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+        border: "1px solid rgba(20,169,162,0.2)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
+        maxWidth: 340,
+      }}>
+        {status === "loading" && (
+          <>
+            <div style={{
+              width: 40, height: 40, borderRadius: "50%", margin: "0 auto 16px",
+              border: "3px solid rgba(20,169,162,0.2)", borderTopColor: "#14A9A2",
+              animation: "spin 0.8s linear infinite",
+            }} />
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", fontFamily: "var(--font-primary)" }}>Submitting...</p>
+          </>
+        )}
+        {status === "error" && (
+          <>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>⚠️</div>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", marginBottom: 20, fontFamily: "var(--font-primary)" }}>
+              Something went wrong. Try again?
+            </p>
+            <button onClick={onRetry} style={{
+              padding: "12px 28px", borderRadius: 10, cursor: "pointer",
+              background: "rgba(20,169,162,0.15)", border: "1px solid rgba(20,169,162,0.3)",
+              color: "#1bc4bc", fontSize: 14, fontWeight: 600, fontFamily: "var(--font-primary)",
+            }}>
+              Retry
+            </button>
+          </>
+        )}
+        {status === "saved-locally" && (
+          <>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>💾</div>
+            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.6)", marginBottom: 8, fontFamily: "var(--font-primary)" }}>
+              Your request was saved locally.
+            </p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-primary)" }}>
+              Our team has been notified.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════
+//  AUTO-SAVE HOOK (Task 6)
+// ═══════════════════════════════════════════════════════════
+function useAutoSave(key, form, step, setForm, setStep) {
+  const [showRestore, setShowRestore] = useState(false);
+  const [savedData, setSavedData] = useState(null);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setSavedData(parsed);
+        setShowRestore(true);
+      }
+    } catch (e) { /* ignore */ }
+  }, [key]);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      try {
+        localStorage.setItem(key, JSON.stringify({ form, step }));
+      } catch (e) { /* ignore */ }
+    }, 500);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [key, form, step]);
+
+  const restore = () => {
+    if (savedData) {
+      if (savedData.form) setForm(savedData.form);
+      if (typeof savedData.step === "number") setStep(savedData.step);
+    }
+    setShowRestore(false);
+  };
+
+  const dismiss = () => {
+    localStorage.removeItem(key);
+    setShowRestore(false);
+  };
+
+  const clear = () => { localStorage.removeItem(key); };
+
+  return { showRestore, restore, dismiss, clear };
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESTORE PROMPT (Task 6)
+// ═══════════════════════════════════════════════════════════
+const RestorePrompt = ({ onYes, onNo }) => (
+  <div style={{
+    position: "fixed", inset: 0, zIndex: 9998,
+    display: "flex", alignItems: "center", justifyContent: "center",
+    background: "rgba(7,10,16,0.85)", backdropFilter: "blur(8px)",
+  }}>
+    <div style={{
+      padding: "32px 36px", borderRadius: 20, textAlign: "center", maxWidth: 380,
+      backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+      background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+      border: "1px solid rgba(20,169,162,0.2)",
+      boxShadow: "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
+    }}>
+      <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+      <p style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", marginBottom: 8, fontFamily: "var(--font-primary)" }}>
+        Continue where you left off?
+      </p>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", marginBottom: 24, fontFamily: "var(--font-primary)" }}>
+        We found your previous progress for this form.
+      </p>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+        <button onClick={onNo} style={{
+          padding: "10px 24px", borderRadius: 10, cursor: "pointer",
+          background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
+          color: "rgba(255,255,255,0.4)", fontSize: 14, fontFamily: "var(--font-primary)",
+        }}>Start Fresh</button>
+        <button onClick={onYes} style={{
+          padding: "10px 24px", borderRadius: 10, cursor: "pointer",
+          background: "rgba(20,169,162,0.15)", border: "1px solid rgba(20,169,162,0.3)",
+          color: "#1bc4bc", fontSize: 14, fontWeight: 600, fontFamily: "var(--font-primary)",
+        }}>Yes, Continue</button>
+      </div>
+    </div>
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════
+//  VALIDATION UTILITIES (Task 9)
+// ═══════════════════════════════════════════════════════════
+const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const validatePhone = (phone) => !phone || /^[\d\s\-().+]+$/.test(phone);
+
+const ValidationMsg = ({ msg, show }) => (
+  <div style={{
+    fontSize: 12, color: "rgba(186,12,47,0.7)", marginTop: 4,
+    fontFamily: "var(--font-primary)",
+    opacity: show ? 1 : 0, maxHeight: show ? 20 : 0,
+    transition: "opacity 0.3s ease, max-height 0.3s ease",
+    overflow: "hidden",
+  }}>
+    {msg}
+  </div>
+);
 
 const NHBP = {
   turquoise: "#14A9A2",
@@ -12,10 +303,6 @@ const NHBP = {
   pink: "#FAC6C7",
   red: "#BA0C2F",
   redGlow: "rgba(186, 12, 47, 0.15)",
-  turquoiseCard: "#45B3A2",
-  maroonCard: "#4B0D20",
-  mintDivider: "#a8ddd4",
-  namePlateTurq: "#6BC5AA",
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -50,6 +337,7 @@ const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
   const [hovered, setHovered] = useState(false);
   return (
     <div
+      className={onClick ? "click-transition" : undefined}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -112,7 +400,7 @@ const FormGlassCard = ({ children, active, onClick, style: s = {}, glowColor }) 
   const gc = glowColor || FC.turquoise;
   const gcGlow = glowColor ? `${glowColor}30` : FC.turquoiseGlow;
   return (
-    <div onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+    <div className={onClick ? "click-transition" : undefined} onClick={onClick} onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
         background: active ? `linear-gradient(135deg, ${gc}18, ${gc}08)` : h ? "rgba(255,255,255,0.04)" : FC.glass,
         border: `1px solid ${active ? gc + "50" : h ? "rgba(255,255,255,0.12)" : FC.border}`,
@@ -193,7 +481,7 @@ const FormBadge = ({ name, color }) => (
 );
 
 const VdStepLabel = ({ n, totalSteps }) => (
-  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", marginBottom: 12, fontFamily: "monospace" }}>
+  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", marginBottom: 12, fontFamily: "var(--font-primary)" }}>
     {String(n).padStart(2, "0")} / {totalSteps}
   </p>
 );
@@ -208,25 +496,6 @@ const VdHint = ({ children }) => (
 
 const PortalBackground = () => <div className="concept-e-bg" />;
 
-const BackToPortalButton = React.memo(({ onClick }) => (
-  <button
-    onClick={onClick}
-    style={{
-      position: "fixed", top: 16, left: 16, zIndex: 9999,
-      background: "rgba(8,9,12,0.85)", backdropFilter: "blur(16px)",
-      border: `1px solid ${NHBP.turquoise}30`,
-      borderRadius: 10, padding: "8px 16px",
-      color: NHBP.turquoiseLight, fontSize: 12, fontWeight: 600,
-      cursor: "pointer", fontFamily: "var(--font-primary)",
-      transition: "all 0.25s ease",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
-    }}
-    onMouseEnter={e => { e.target.style.borderColor = NHBP.turquoise + "60"; e.target.style.boxShadow = `0 4px 24px rgba(0,0,0,0.5), 0 0 12px ${NHBP.turquoiseGlow}`; }}
-    onMouseLeave={e => { e.target.style.borderColor = NHBP.turquoise + "30"; e.target.style.boxShadow = "0 4px 20px rgba(0,0,0,0.4)"; }}
-  >
-    ← Back to Portal
-  </button>
-));
 
 // ═══════════════════════════════════════════════════════════
 //  VISUAL DESIGNS FORM — UNTOUCHED (except scoping renames)
@@ -586,7 +855,7 @@ const Glass = ({ children, active, onClick, style = {}, hoverGlow }) => {
   const [h, setH] = useState(false);
   const glowColor = hoverGlow || NHBP.turquoise;
   return (
-    <div onClick={onClick}
+    <div className={onClick ? "click-transition" : undefined} onClick={onClick}
       onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
       style={{
         background: active ? `${glowColor}14` : "rgba(255,255,255,0.025)",
@@ -643,7 +912,7 @@ const SectionCard = ({ icon, title, subtitle, children, isDone }) => {
 };
 
 // ─── MAIN COMPONENT ────────────────────────────────────
-function VisualDesignForm({ onBackToPortal }) {
+function VisualDesignForm({ onReturnToServices }) {
   const [step, setStep] = useState(0);
   const [anim, setAnim] = useState(false);
   const [form, setForm] = useState({
@@ -656,13 +925,18 @@ function VisualDesignForm({ onBackToPortal }) {
     contactTitle: "", contactName: "", contactPhone: "", contactEmail: "",
     inspiration: "", notes: "",
     priority: null, deadline: "", needPrinting: null,
+    requestForPrint: false, printQuantity: "", printPaperSize: "", printNotes: "",
   });
   const [submitted, setSubmitted] = useState(false);
   const [ticket, setTicket] = useState("");
   const [styleScroll, setStyleScroll] = useState(0);
+  const [submitStatus, setSubmitStatus] = useState("idle");
   const inputRef = useRef(null);
   const styleContainerRef = useRef(null);
   const totalSteps = 9; // Merged style+color into one step
+
+  // Auto-save
+  const autoSave = useAutoSave("nhbp-form-visual-designs", form, step, setForm, setStep);
 
   useEffect(() => {
     if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 350);
@@ -670,67 +944,104 @@ function VisualDesignForm({ onBackToPortal }) {
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
+  const submitToTrello = async (ticket) => {
+    const desc = [
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "📋 COMMUNICATIONS PORTAL SUBMISSION",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "",
+      `🎫 Ticket: ${ticket}`,
+      `📅 Submitted: ${new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}`,
+      "",
+      "👤 REQUESTER",
+      `Name: ${form.requesterName || "Not provided"}`,
+      `Department: ${form.department || "Not provided"}`,
+      `Email: ${form.email || "Not provided"}`,
+      `Phone: ${form.phone || "Not provided"}`,
+      "",
+      "🎨 DESIGN REQUEST",
+      `Service: Visual Designs`,
+      `Headline: ${form.headline || "Not provided"}`,
+      `Piece Type: ${form.pieceType || "Not provided"}`,
+      `Format: ${form.format || "Not provided"}`,
+      `Size: ${form.size || "Not provided"}`,
+      `Printing Needed: ${form.needPrinting || "Not specified"}`,
+      form.multiPage ? `Multi-page: Yes (${form.multiPageType || "N/A"})` : "",
+      form.requestForPrint ? `\n🖨️ PRINT REQUEST\nQuantity: ${form.printQuantity || "Not specified"}\nPaper Size: ${form.printPaperSize || "Not specified"}\nNotes: ${form.printNotes || "None"}` : "",
+      "",
+      "📅 DATE / TIME / LOCATION",
+      `Date: ${form.date || "Not provided"}`,
+      `Time: ${form.time || "Not provided"}`,
+      `Location: ${form.location || "Not provided"}`,
+      "",
+      "📝 BODY COPY",
+      form.bodyText || "Not provided",
+      "",
+      form.additionalNotes ? `💬 ADDITIONAL NOTES\n${form.additionalNotes}` : "",
+      "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "🐢 Submitted via NHBP Communications Portal"
+    ].filter(Boolean).join("\n");
+
+    const cardName = `🎨 ${form.headline || "Visual Design Request"} — ${form.requesterName || "Unknown"}`;
+    const params = new URLSearchParams({
+      key: "f673437af67a0aea622cc11fa7d93d83",
+      token: "ATTAa5db5e2413dd45dd442ba88f9552c28961c33d9dade1f44201f07aa6a0b21847E78CC420",
+      idList: "69830a3e0d0e979f5b51d662",
+      name: cardName,
+      desc: desc,
+      pos: "top"
+    });
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      await fetch("https://api.trello.com/1/cards?" + params.toString(), { method: "POST", signal: controller.signal });
+      clearTimeout(timeout);
+      return true;
+    } catch (e) {
+      clearTimeout(timeout);
+      throw e;
+    }
+  };
+
+  const handleTrelloSubmit = async () => {
+    const ticket = `NHBP-DES-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`;
+    setTicket(ticket);
+    setSubmitStatus("loading");
+    try {
+      await submitToTrello(ticket);
+      autoSave.clear();
+      setSubmitStatus("idle");
+      setSubmitted(true);
+    } catch (e) {
+      console.error("Trello card creation failed:", e);
+      // Save locally as fallback
+      try { localStorage.setItem("nhbp-failed-submission-" + ticket, JSON.stringify({ ticket, form, date: new Date().toISOString() })); } catch (_) {}
+      setSubmitStatus("error");
+    }
+  };
+
+  const retrySubmit = async () => {
+    setSubmitStatus("loading");
+    try {
+      await submitToTrello(ticket);
+      autoSave.clear();
+      setSubmitStatus("idle");
+      setSubmitted(true);
+    } catch (e) {
+      console.error("Trello retry failed:", e);
+      setSubmitStatus("saved-locally");
+      setTimeout(() => { setSubmitStatus("idle"); setSubmitted(true); }, 2500);
+    }
+  };
+
   const goNext = () => {
     if (anim) return;
     setAnim(true);
-    setTimeout(async () => {
-      if (step < totalSteps - 1) setStep(s => s + 1);
-      else {
-        const ticket = `NHBP-DES-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000) + 1000}`;
-        setTicket(ticket);
-        // ── TRELLO API: Create card on The Hub → Tickets & Requests ──
-        try {
-          const desc = [
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "📋 COMMUNICATIONS PORTAL SUBMISSION",
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "",
-            `🎫 Ticket: ${ticket}`,
-            `📅 Submitted: ${new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true })}`,
-            "",
-            "👤 REQUESTER",
-            `Name: ${form.requesterName || "Not provided"}`,
-            `Department: ${form.department || "Not provided"}`,
-            `Email: ${form.email || "Not provided"}`,
-            `Phone: ${form.phone || "Not provided"}`,
-            "",
-            "🎨 DESIGN REQUEST",
-            `Service: Visual Designs`,
-            `Headline: ${form.headline || "Not provided"}`,
-            `Piece Type: ${form.pieceType || "Not provided"}`,
-            `Format: ${form.format || "Not provided"}`,
-            `Size: ${form.size || "Not provided"}`,
-            `Printing Needed: ${form.needPrinting || "Not specified"}`,
-            form.multiPage ? `Multi-page: Yes (${form.multiPageType || "N/A"})` : "",
-            "",
-            "📅 DATE / TIME / LOCATION",
-            `Date: ${form.date || "Not provided"}`,
-            `Time: ${form.time || "Not provided"}`,
-            `Location: ${form.location || "Not provided"}`,
-            "",
-            "📝 BODY COPY",
-            form.bodyText || "Not provided",
-            "",
-            form.additionalNotes ? `💬 ADDITIONAL NOTES\n${form.additionalNotes}` : "",
-            "",
-            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-            "🐢 Submitted via NHBP Communications Portal"
-          ].filter(Boolean).join("\n");
-
-          const cardName = `🎨 ${form.headline || "Visual Design Request"} — ${form.requesterName || "Unknown"}`;
-          const params = new URLSearchParams({
-            key: "f673437af67a0aea622cc11fa7d93d83",
-            token: "ATTAa5db5e2413dd45dd442ba88f9552c28961c33d9dade1f44201f07aa6a0b21847E78CC420",
-            idList: "69830a3e0d0e979f5b51d662",
-            name: cardName,
-            desc: desc,
-            pos: "top"
-          });
-          await fetch("https://api.trello.com/1/cards?" + params.toString(), { method: "POST" });
-        } catch (e) { console.error("Trello card creation failed:", e); }
-        setSubmitted(true);
-      }
-      setAnim(false);
+    setTimeout(() => {
+      if (step < totalSteps - 1) { setStep(s => s + 1); setAnim(false); }
+      else { setAnim(false); handleTrelloSubmit(); }
     }, 280);
   };
 
@@ -747,14 +1058,14 @@ function VisualDesignForm({ onBackToPortal }) {
     switch (step) {
       case 0: return !!form.pieceType;
       case 1: return !!form.format;
-      case 2: return form.pieceType === "printed-media" 
+      case 2: return form.pieceType === "printed-media"
         ? (!!form.size || form.multiPage || form.specialRequest)
         : form.pieceType === "special-request"
-        ? (form.gsrDescription.trim().length > 0 && form.gsrName.trim().length > 0 && form.gsrEmail.trim().length > 0 && !!form.gsrDeadline)
+        ? (form.gsrDescription.trim().length > 0 && form.gsrName.trim().length > 0 && validateEmail(form.gsrEmail) && !!form.gsrDeadline)
         : !!form.size;
       case 3: return !!form.purpose;
-      case 4: return !!form.styleDir || form.designerChoice; // style or designer's choice
-      case 5: return !!form.headline.trim(); // headline required, rest optional
+      case 4: return !!form.styleDir || form.designerChoice;
+      case 5: return !!form.headline.trim();
       case 6: return true;
       case 7: return !!form.priority;
       case 8: return true;
@@ -798,14 +1109,14 @@ function VisualDesignForm({ onBackToPortal }) {
     const selectedStyle = STYLES.find(s => s.id === form.styleDir);
     const activePalette = getActivePalette();
     return (
-      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <BG />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", zIndex: 1 }}>
           <div style={{ width: 76, height: 76, borderRadius: "50%", background: `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, color: "#fff", marginBottom: 24, boxShadow: `0 0 50px ${NHBP.turquoiseGlow}` }}>✓</div>
           <h1 style={{ fontSize: 30, fontWeight: 300, margin: "0 0 16px" }}>Request submitted!</h1>
           <Glass style={{ padding: "12px 28px", marginBottom: 20 }}>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.15em", display: "block" }}>{form.pieceType === "special-request" ? "Special Request" : "Visual Design Request"}</span>
-            <span style={{ fontSize: 22, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "monospace" }}>{ticket}</span>
+            <span style={{ fontSize: 22, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "var(--font-primary)" }}>{ticket}</span>
           </Glass>
           <Glass style={{ padding: "18px 24px", maxWidth: 440, width: "100%", textAlign: "left" }}>
             {form.pieceType === "special-request" ? (
@@ -870,7 +1181,7 @@ function VisualDesignForm({ onBackToPortal }) {
   const inputStyle = {
     width: "100%", background: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10,
-    color: "#f0f0f0", fontSize: 14, fontFamily: "Tahoma, sans-serif",
+    color: "#f0f0f0", fontSize: 14, fontFamily: "var(--font-primary)",
     padding: "12px 14px", outline: "none", caretColor: NHBP.turquoise,
     boxSizing: "border-box", transition: "border-color 0.3s",
   };
@@ -999,7 +1310,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     <div style={{ marginTop: 10, animation: "fadeSlide 0.3s ease" }}>
                       <input ref={inputRef} placeholder='Describe the size (e.g. "24 × 36 inches")'
                         value={form.customSize} onChange={e => set("customSize", e.target.value)}
-                        style={{ width: "100%", maxWidth: 400, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 16, fontFamily: "Tahoma, sans-serif", padding: "12px 0", outline: "none", caretColor: NHBP.turquoise }} />
+                        style={{ width: "100%", maxWidth: 400, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 16, fontFamily: "var(--font-primary)", padding: "12px 0", outline: "none", caretColor: NHBP.turquoise }} />
                     </div>
                   )}
                 </div>
@@ -1019,7 +1330,7 @@ function VisualDesignForm({ onBackToPortal }) {
                       padding: "14px 16px", borderRadius: 12, cursor: "pointer",
                       background: form.multiPage ? `${NHBP.turquoise}12` : "rgba(255,255,255,0.02)",
                       border: `1px solid ${form.multiPage ? NHBP.turquoise + "40" : "rgba(255,255,255,0.08)"}`,
-                      transition: "all 0.3s ease", fontFamily: "Tahoma, sans-serif",
+                      transition: "all 0.3s ease", fontFamily: "var(--font-primary)",
                       WebkitAppearance: "none", textAlign: "left",
                     }}>
                     <div style={{
@@ -1080,7 +1391,7 @@ function VisualDesignForm({ onBackToPortal }) {
                       padding: "14px 16px", borderRadius: 12, cursor: "pointer",
                       background: form.specialRequest ? `${NHBP.pink}12` : "rgba(255,255,255,0.02)",
                       border: `1px solid ${form.specialRequest ? NHBP.pink + "40" : "rgba(255,255,255,0.08)"}`,
-                      transition: "all 0.3s ease", fontFamily: "Tahoma, sans-serif",
+                      transition: "all 0.3s ease", fontFamily: "var(--font-primary)",
                       WebkitAppearance: "none", textAlign: "left",
                     }}>
                     <div style={{
@@ -1189,7 +1500,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     style={{
                       width: "100%", padding: "16px 24px", borderRadius: 14, cursor: "pointer",
                       background: `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseLight})`,
-                      border: "none", fontFamily: "Tahoma, sans-serif", fontSize: 15, fontWeight: 700,
+                      border: "none", fontFamily: "var(--font-primary)", fontSize: 15, fontWeight: 700,
                       color: "#1a1a2e", letterSpacing: "0.03em",
                       boxShadow: `0 4px 20px ${NHBP.turquoise}30`,
                       animation: "fadeSlide 0.3s ease",
@@ -1236,7 +1547,7 @@ function VisualDesignForm({ onBackToPortal }) {
                 <input ref={inputRef} placeholder='Describe the size (e.g. "24 × 36 inches")'
                   value={form.customSize} onChange={e => set("customSize", e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && form.customSize.trim()) goNext(); }}
-                  style={{ width: "100%", maxWidth: 400, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 16, fontFamily: "Tahoma, sans-serif", padding: "12px 0", outline: "none", caretColor: NHBP.turquoise }} />
+                  style={{ width: "100%", maxWidth: 400, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 16, fontFamily: "var(--font-primary)", padding: "12px 0", outline: "none", caretColor: NHBP.turquoise }} />
               </div>
             )}
           </div>
@@ -1420,7 +1731,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     <div style={{ marginTop: 14, animation: "fadeSlide 0.3s ease" }}>
                       <input ref={inputRef} placeholder="Describe the colors you're envisioning..."
                         value={form.customPalette} onChange={e => set("customPalette", e.target.value)}
-                        style={{ width: "100%", maxWidth: 440, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 14, fontFamily: "Tahoma, sans-serif", padding: "10px 0", outline: "none", caretColor: NHBP.turquoise }} />
+                        style={{ width: "100%", maxWidth: 440, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 14, fontFamily: "var(--font-primary)", padding: "10px 0", outline: "none", caretColor: NHBP.turquoise }} />
                     </div>
                   )}
                 </div>
@@ -1509,7 +1820,7 @@ function VisualDesignForm({ onBackToPortal }) {
                       padding: "12px 16px", borderRadius: 12, cursor: "pointer",
                       background: form.needVerbiage ? `${NHBP.pink}12` : "rgba(255,255,255,0.02)",
                       border: `1px solid ${form.needVerbiage ? NHBP.pink + "40" : "rgba(255,255,255,0.08)"}`,
-                      transition: "all 0.3s ease", fontFamily: "Tahoma, sans-serif",
+                      transition: "all 0.3s ease", fontFamily: "var(--font-primary)",
                       WebkitAppearance: "none", textAlign: "left",
                     }}>
                     <div style={{
@@ -1553,7 +1864,7 @@ function VisualDesignForm({ onBackToPortal }) {
                                 display: "inline-flex", alignItems: "center", gap: 5,
                                 padding: "6px 10px", borderRadius: 20, cursor: "pointer",
                                 background: `${NHBP.pink}18`, border: `1px solid ${NHBP.pink}35`,
-                                color: NHBP.pink, fontSize: 12, fontFamily: "Tahoma, sans-serif",
+                                color: NHBP.pink, fontSize: 12, fontFamily: "var(--font-primary)",
                                 WebkitAppearance: "none", transition: "all 0.2s",
                               }}>
                               {kw} <span style={{ opacity: 0.6 }}>✕</span>
@@ -1591,7 +1902,7 @@ function VisualDesignForm({ onBackToPortal }) {
                                     background: selected ? `${NHBP.turquoise}20` : "rgba(255,255,255,0.03)",
                                     border: `1px solid ${selected ? NHBP.turquoise + "40" : "rgba(255,255,255,0.08)"}`,
                                     color: selected ? NHBP.turquoiseLight : "rgba(255,255,255,0.5)",
-                                    fontSize: 12, fontFamily: "Tahoma, sans-serif",
+                                    fontSize: 12, fontFamily: "var(--font-primary)",
                                     WebkitAppearance: "none", transition: "all 0.2s",
                                   }}>
                                   {kw}
@@ -1617,7 +1928,7 @@ function VisualDesignForm({ onBackToPortal }) {
                                         background: selected ? `${NHBP.turquoise}20` : "rgba(255,255,255,0.03)",
                                         border: `1px solid ${selected ? NHBP.turquoise + "40" : "rgba(255,255,255,0.06)"}`,
                                         color: selected ? NHBP.turquoiseLight : "rgba(255,255,255,0.4)",
-                                        fontSize: 11, fontFamily: "Tahoma, sans-serif",
+                                        fontSize: 11, fontFamily: "var(--font-primary)",
                                         WebkitAppearance: "none", transition: "all 0.2s",
                                       }}>
                                       {kw}
@@ -1659,7 +1970,7 @@ function VisualDesignForm({ onBackToPortal }) {
                             background: form.customKeyword.trim() ? `${NHBP.turquoise}20` : "rgba(255,255,255,0.03)",
                             border: `1px solid ${form.customKeyword.trim() ? NHBP.turquoise + "40" : "rgba(255,255,255,0.06)"}`,
                             color: form.customKeyword.trim() ? NHBP.turquoiseLight : "rgba(255,255,255,0.2)",
-                            fontSize: 12, fontWeight: 600, fontFamily: "Tahoma, sans-serif",
+                            fontSize: 12, fontWeight: 600, fontFamily: "var(--font-primary)",
                             WebkitAppearance: "none", transition: "all 0.2s", flexShrink: 0,
                           }}>
                           + Add
@@ -1679,7 +1990,7 @@ function VisualDesignForm({ onBackToPortal }) {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
                   <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>Write your own body text</span>
                   <span style={{
-                    fontSize: 10, fontFamily: "monospace",
+                    fontSize: 10, fontFamily: "var(--font-primary)",
                     color: wordCount > 600 ? NHBP.red : wordCount > 500 ? "#e0a630" : "rgba(255,255,255,0.2)",
                     transition: "color 0.3s",
                   }}>
@@ -1816,7 +2127,7 @@ function VisualDesignForm({ onBackToPortal }) {
                 width: "100%", maxWidth: 480, minHeight: 100, resize: "vertical",
                 background: "rgba(255,255,255,0.02)", backdropFilter: "blur(12px)",
                 border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12,
-                color: "#f0f0f0", fontSize: 14, fontFamily: "Tahoma, sans-serif",
+                color: "#f0f0f0", fontSize: 14, fontFamily: "var(--font-primary)",
                 padding: "16px", outline: "none", lineHeight: 1.6, caretColor: NHBP.turquoise,
                 boxSizing: "border-box", transition: "border-color 0.3s",
               }} />
@@ -1858,7 +2169,7 @@ function VisualDesignForm({ onBackToPortal }) {
             <div style={{ marginTop: 16 }}>
               <Hint>Have a specific date in mind? (optional)</Hint>
               <input type="date" value={form.deadline} onChange={e => set("deadline", e.target.value)}
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#f0f0f0", fontSize: 14, fontFamily: "Tahoma, sans-serif", padding: "12px 16px", outline: "none", caretColor: NHBP.turquoise, colorScheme: "dark" }} />
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#f0f0f0", fontSize: 14, fontFamily: "var(--font-primary)", padding: "12px 16px", outline: "none", caretColor: NHBP.turquoise, colorScheme: "dark" }} />
             </div>
           </div>
         );
@@ -1966,6 +2277,52 @@ function VisualDesignForm({ onBackToPortal }) {
                   </div>
                 )}
               </div>
+
+              {/* Request for Print */}
+              <div style={{ paddingTop: 4 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "8px 0" }}
+                  onClick={() => set("requestForPrint", !form.requestForPrint)}>
+                  <div style={{
+                    width: 20, height: 20, borderRadius: 5, flexShrink: 0,
+                    border: `1px solid ${form.requestForPrint ? "rgba(20,169,162,0.5)" : "rgba(255,255,255,0.12)"}`,
+                    background: form.requestForPrint ? "rgba(20,169,162,0.15)" : "rgba(255,255,255,0.03)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "all 0.3s ease",
+                  }}>
+                    {form.requestForPrint && <span style={{ fontSize: 12, color: NHBP.turquoiseLight }}>✓</span>}
+                  </div>
+                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>I also need this printed</span>
+                </label>
+                {form.requestForPrint && (
+                  <div style={{ marginTop: 10, padding: "14px 16px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 4 }}>Quantity</div>
+                      <input type="number" min="1" placeholder="e.g. 100" value={form.printQuantity} onChange={e => set("printQuantity", e.target.value)}
+                        style={{ ...inputStyle, padding: "8px 12px", fontSize: 13 }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 4 }}>Paper size</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        {["Letter", "Legal", "Tabloid", "A4", "Custom"].map(sz => (
+                          <button key={sz} onClick={() => set("printPaperSize", sz)}
+                            style={{
+                              padding: "6px 14px", borderRadius: 8, fontSize: 12, cursor: "pointer",
+                              background: form.printPaperSize === sz ? "rgba(20,169,162,0.15)" : "rgba(255,255,255,0.03)",
+                              border: `1px solid ${form.printPaperSize === sz ? "rgba(20,169,162,0.3)" : "rgba(255,255,255,0.08)"}`,
+                              color: form.printPaperSize === sz ? NHBP.turquoiseLight : "rgba(255,255,255,0.4)",
+                              fontFamily: "var(--font-primary)", transition: "all 0.2s ease",
+                            }}>{sz}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginBottom: 4 }}>Print notes (optional)</div>
+                      <textarea placeholder="Paper weight, finish, binding..." value={form.printNotes} onChange={e => set("printNotes", e.target.value)}
+                        style={{ ...inputStyle, padding: "8px 12px", fontSize: 13, minHeight: 60, resize: "vertical" }} />
+                    </div>
+                  </div>
+                )}
+              </div>
             </Glass>
           </div>
         );
@@ -1976,8 +2333,10 @@ function VisualDesignForm({ onBackToPortal }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <BG />
+      <SubmitOverlay status={submitStatus} onRetry={retrySubmit} />
+      {autoSave.showRestore && <RestorePrompt onYes={autoSave.restore} onNo={autoSave.dismiss} />}
       {/* Progress bar */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.03)", zIndex: 100 }}>
         <div style={{ height: "100%", borderRadius: "0 1px 1px 0", width: `${((step + 1) / totalSteps) * 100}%`, background: `linear-gradient(90deg, ${NHBP.turquoise}, ${NHBP.turquoiseLight})`, boxShadow: `0 0 12px ${NHBP.turquoiseGlow}`, transition: "width 0.5s cubic-bezier(0.4,0,0.2,1)" }} />
@@ -1987,34 +2346,11 @@ function VisualDesignForm({ onBackToPortal }) {
         {renderStep()}
       </div>
       {/* Nav */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", background: "linear-gradient(0deg, rgba(8,9,12,0.95) 50%, transparent)", backdropFilter: "blur(12px)" }}>
-        <button onClick={goBack} disabled={step === 0}
-          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", fontSize: 13, cursor: step === 0 ? "default" : "pointer", padding: "10px 16px", fontFamily: "Tahoma, sans-serif", opacity: step === 0 ? 0.3 : 1, transition: "opacity 0.3s" }}>
-          ← Back
-        </button>
-        <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div key={i} style={{
-              height: 5, borderRadius: 3, width: i === step ? 24 : 5,
-              background: i === step ? NHBP.turquoise : i < step ? NHBP.turquoise + "45" : "rgba(255,255,255,0.08)",
-              boxShadow: i === step ? `0 0 8px ${NHBP.turquoiseGlow}` : "none",
-              transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
-            }} />
-          ))}
-        </div>
-        <button onClick={goNext} disabled={!canAdvance()}
-          style={{
-            background: canAdvance() ? `${NHBP.turquoise}12` : "transparent",
-            border: `1px solid ${canAdvance() ? NHBP.turquoise + "28" : "rgba(255,255,255,0.04)"}`,
-            color: canAdvance() ? NHBP.turquoiseLight : "rgba(255,255,255,0.15)",
-            fontSize: 13, fontWeight: 600, cursor: canAdvance() ? "pointer" : "default",
-            padding: "10px 20px", borderRadius: 10, fontFamily: "Tahoma, sans-serif",
-            transition: "all 0.3s ease",
-            boxShadow: canAdvance() ? `0 0 14px ${NHBP.turquoise}0a` : "none",
-          }}>
-          {step === totalSteps - 1 ? "Submit ✓" : "Next →"}
-        </button>
-      </div>
+      <BottomFormNav
+        onBack={goBack} onNext={goNext} onHome={onReturnToServices}
+        canGoBack={step > 0} canGoNext={canAdvance()}
+        nextLabel={step === totalSteps - 1 ? "Submit ✓" : undefined}
+      />
     </div>
   );
 }
@@ -2026,9 +2362,9 @@ function VisualDesignForm({ onBackToPortal }) {
 // ===========================================================
 
 // ─── EMBEDDED LOGOS (base64) ───
-const NHBP_LOGO = "data:image/png;base64,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";
-const TURTLE_LOGO = "data:image/png;base64,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";
-const COURT_LOGO = "data:image/png;base64,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";
+const NHBP_LOGO = "/nhbp-logo.png";
+const TURTLE_LOGO = "/turtle-logo.png";
+const COURT_LOGO = "/court-logo.png";
 
 // ─── NHBP Brand Colors (from Brand Guidelines) ───
 
@@ -2209,7 +2545,7 @@ const BusinessCardSummary = ({ data, location, enterprise }) => {
           border: `1px solid ${NHBP.turquoise}${generating ? "15" : "40"}`,
           color: generating ? "rgba(255,255,255,0.3)" : NHBP.turquoiseLight,
           fontSize: 12, fontWeight: 600, cursor: generating ? "default" : "pointer",
-          fontFamily: "Tahoma, sans-serif", letterSpacing: "0.05em",
+          fontFamily: "var(--font-primary)", letterSpacing: "0.05em",
           transition: "all 0.3s ease",
         }}>
           {generating ? "Generating PDF..." : "⤓  Download Filled Business Card PDF"}
@@ -2258,7 +2594,7 @@ const NamePlateSummary = ({ data }) => {
           border: `1px solid ${NHBP.turquoise}${generating ? "15" : "40"}`,
           color: generating ? "rgba(255,255,255,0.3)" : NHBP.turquoiseLight,
           fontSize: 12, fontWeight: 600, cursor: generating ? "default" : "pointer",
-          fontFamily: "Tahoma, sans-serif", letterSpacing: "0.05em",
+          fontFamily: "var(--font-primary)", letterSpacing: "0.05em",
           transition: "all 0.3s ease",
         }}>
           {generating ? "Generating PDF..." : "⤓  Download Filled Name Plate PDF"}
@@ -2268,7 +2604,7 @@ const NamePlateSummary = ({ data }) => {
   );
 };
 
-function StationeryKitForm({ onBackToPortal }) {
+function StationeryKitForm({ onReturnToServices }) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [fading, setFading] = useState(false);
@@ -2286,6 +2622,7 @@ function StationeryKitForm({ onBackToPortal }) {
   });
 
   const totalSteps = 6;
+  const autoSave = useAutoSave("nhbp-form-stationery-kit", form, step, setForm, setStep);
 
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
 
@@ -2318,14 +2655,14 @@ function StationeryKitForm({ onBackToPortal }) {
     }, 280);
   };
 
-  const handleSubmit = () => { setTicketNumber(`NHBP-SK-${String(Math.floor(Math.random() * 9000) + 1000)}`); setSubmitted(true); };
+  const handleSubmit = () => { setTicketNumber(`NHBP-SK-${String(Math.floor(Math.random() * 9000) + 1000)}`); autoSave.clear(); setSubmitted(true); };
 
   const canAdvance = () => {
     switch (step) {
       case 0: return form.enterprise !== null;
       case 1: return form.items.length > 0;
       case 2: return form.reason !== null;
-      case 3: return form.firstName.trim() && form.lastName.trim() && form.title.trim() && form.email.includes("@");
+      case 3: return form.firstName.trim() && form.lastName.trim() && form.title.trim() && validateEmail(form.email);
       case 4: return form.officeLocation !== null;
       case 5: return true;
       default: return true;
@@ -2338,7 +2675,7 @@ function StationeryKitForm({ onBackToPortal }) {
   const Background = PortalBackground;
 
   const slideStyle = { width: "100%", maxWidth: 620, transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", opacity: fading ? 0 : 1, transform: fading ? `translateY(${direction * 24}px)` : "translateY(0)" };
-  const inputStyle = { width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#f0f0f0", fontSize: 18, fontFamily: "Tahoma, 'Segoe UI', sans-serif", padding: "14px 16px", outline: "none", transition: "border-color 0.3s ease", caretColor: NHBP.turquoise, boxSizing: "border-box", direction: "ltr", textAlign: "left", unicodeBidi: "plaintext" };
+  const inputStyle = { width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#f0f0f0", fontSize: 18, fontFamily: "var(--font-primary)", padding: "14px 16px", outline: "none", transition: "border-color 0.3s ease", caretColor: NHBP.turquoise, boxSizing: "border-box", direction: "ltr", textAlign: "left", unicodeBidi: "plaintext" };
   const labelStyle = { fontSize: 12, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6, display: "block" };
 
   // ═══════════ CONFIRMATION ═══════════
@@ -2346,7 +2683,7 @@ function StationeryKitForm({ onBackToPortal }) {
     const loc = OFFICE_LOCATIONS.find(l => l.id === form.officeLocation);
     const ent = ENTERPRISES.find(e => e.id === form.enterprise);
     return (
-      <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", direction: "ltr" }}>
+      <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", direction: "ltr" }}>
         <Background />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "40px 24px", position: "relative", zIndex: 1, animation: "scaleIn 0.5s ease" }}>
           <div style={{ width: 80, height: 80, borderRadius: "50%", marginBottom: 28, background: `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, color: "#fff", boxShadow: `0 0 50px ${NHBP.turquoiseGlow}` }}>✓</div>
@@ -2354,7 +2691,7 @@ function StationeryKitForm({ onBackToPortal }) {
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: "0 0 24px" }}>Your order is ready for printing verification</p>
           <GlassCard style={{ padding: "14px 32px", marginBottom: 24 }}>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.15em", display: "block" }}>Request</span>
-            <span style={{ fontSize: 24, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "monospace" }}>{ticketNumber}</span>
+            <span style={{ fontSize: 24, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "var(--font-primary)" }}>{ticketNumber}</span>
           </GlassCard>
 
           {form.items.includes("business-cards") && (
@@ -2389,7 +2726,7 @@ function StationeryKitForm({ onBackToPortal }) {
     switch (step) {
       case 0: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>01 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>01 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Which enterprise are you with?</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>This determines your card template and logo</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
@@ -2408,7 +2745,7 @@ function StationeryKitForm({ onBackToPortal }) {
 
       case 1: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>02 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>02 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>What do you need?</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Select all that apply</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
@@ -2433,7 +2770,7 @@ function StationeryKitForm({ onBackToPortal }) {
 
       case 2: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>03 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>03 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>What's the reason?</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Helps us know if this is a first order or reprint</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
@@ -2449,7 +2786,7 @@ function StationeryKitForm({ onBackToPortal }) {
 
       case 3: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>04 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>04 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Your information</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Exactly as it should appear on your stationery</p>
           <div style={{ maxWidth: 440, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -2486,7 +2823,7 @@ function StationeryKitForm({ onBackToPortal }) {
 
       case 4: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>05 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>05 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Select your office location</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>This address appears on the back of your business card</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
@@ -2506,7 +2843,7 @@ function StationeryKitForm({ onBackToPortal }) {
         const ent = ENTERPRISES.find(e => e.id === form.enterprise);
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>06 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>06 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Review & Submit</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Make sure everything looks right</p>
             {form.items.includes("business-cards") && (
@@ -2544,7 +2881,8 @@ function StationeryKitForm({ onBackToPortal }) {
   };
 
   return (
-    <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", direction: "ltr" }}>
+    <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", direction: "ltr" }}>
+      {autoSave.showRestore && <RestorePrompt onYes={autoSave.restore} onNo={autoSave.dismiss} />}
       <Background />
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", padding: "0 24px" }}>
         <div style={{ padding: "20px 0 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
@@ -2559,14 +2897,11 @@ function StationeryKitForm({ onBackToPortal }) {
           </div>
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "32px 0" }}>{renderStep()}</div>
-        <div style={{ padding: "16px 0 28px", display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 620, width: "100%" }}>
-          <button onClick={goBack} style={{ background: "none", border: "none", color: step === 0 ? "transparent" : "rgba(255,255,255,0.3)", fontSize: 14, cursor: step === 0 ? "default" : "pointer", fontFamily: "Tahoma, sans-serif", padding: "8px 0", pointerEvents: step === 0 ? "none" : "auto" }}>← Back</button>
-          {(step > 0 || form.items.length > 0) && (
-            <button onClick={canAdvance() ? goNext : undefined} style={{ background: canAdvance() ? `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseDark})` : "rgba(255,255,255,0.05)", border: "none", borderRadius: 28, color: canAdvance() ? "#fff" : "rgba(255,255,255,0.2)", fontSize: 14, fontWeight: 600, padding: "12px 32px", cursor: canAdvance() ? "pointer" : "default", transition: "all 0.3s ease", boxShadow: canAdvance() ? `0 4px 20px ${NHBP.turquoiseGlow}` : "none", fontFamily: "Tahoma, sans-serif" }}>
-              {step === totalSteps - 1 ? "Submit Order →" : "Continue →"}
-            </button>
-          )}
-        </div>
+        <BottomFormNav
+          onBack={goBack} onNext={goNext} onHome={onReturnToServices}
+          canGoBack={step > 0} canGoNext={canAdvance()}
+          nextLabel={step === totalSteps - 1 ? "Submit Order →" : undefined}
+        />
       </div>
     </div>
   );
@@ -2579,7 +2914,7 @@ function StationeryKitForm({ onBackToPortal }) {
 // ===========================================================
 //  EMPLOYEE HEADSHOTS FORM
 // ===========================================================
-function EmployeeHeadshotsForm({ onBackToPortal }) {
+function EmployeeHeadshotsForm({ onReturnToServices }) {
   // ── Local constants ──
   const C = FC;
 
@@ -2639,6 +2974,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
   });
 
   const u = (f, v) => setForm((p) => ({ ...p, [f]: v }));
+  const autoSave = useAutoSave("nhbp-form-headshots", form, step, setForm, setStep);
 
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
 
@@ -2647,6 +2983,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
   const handleSubmit = () => {
     setTicketNumber(`NHBP-HS-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    autoSave.clear();
     setSubmitted(true);
   };
 
@@ -2655,7 +2992,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 
   // ── Local styles ──
   const HS = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     progressWrap: { position: "fixed", top: 0, left: 0, right: 0, padding: "16px 24px 12px", zIndex: 10, background: `linear-gradient(180deg, ${C.dark}ee, transparent)` },
@@ -2666,8 +3003,8 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
     stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -2701,7 +3038,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
             ].filter(([,v]) => v).map(([k, v, accent], i) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < 4 ? 10 : 0 }}>
                 <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
-                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit" }}>{v}</span>
+                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)" }}>{v}</span>
               </div>
             ))}
           </FormGlassCard>
@@ -2710,7 +3047,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
               display: "inline-block", padding: "16px 36px", marginBottom: 20,
               background: `linear-gradient(135deg, ${C.turquoise}, ${C.green})`,
               color: "#fff", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 700,
-              textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
+              textDecoration: "none", fontFamily: "var(--font-primary)",
               boxShadow: `0 8px 32px ${C.turquoiseGlow}`, transition: "transform 0.2s",
             }}>
             📅 Schedule Your Session
@@ -2755,7 +3092,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
           <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
           <div style={HS.navRow}>
             <button onClick={() => goTo(0)} style={HS.btnBack}>← Back</button>
-            <button onClick={() => goTo(2)} disabled={!form.firstName || !form.lastName || !form.department || !form.email.includes("@")} style={HS.btn}>Continue →</button>
+            <button onClick={() => goTo(2)} disabled={!form.firstName || !form.lastName || !form.department || !validateEmail(form.email)} style={HS.btn}>Continue →</button>
           </div>
         </div>
       );
@@ -2817,7 +3154,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
             <textarea value={form.notes} onChange={(e) => u("notes", e.target.value)}
               placeholder="e.g. I'd like to match my colleague's background, I have glasses and want to avoid glare, etc."
               rows={4}
-              style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", resize: "vertical", outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "var(--font-primary)", resize: "vertical", outline: "none", boxSizing: "border-box" }}
             />
           </div>
           <div style={HS.navRow}>
@@ -2868,6 +3205,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 
   return (
     <div style={HS.container}>
+      {autoSave.showRestore && <RestorePrompt onYes={autoSave.restore} onNo={autoSave.dismiss} />}
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={HS.bgOrb1} /><div style={HS.bgOrb2} />
       {step > 0 && (
@@ -2879,8 +3217,26 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
           <div style={HS.progressTrack}><div style={{ ...HS.progressBar, width: `${progress}%` }} /></div>
         </div>
       )}
-      <div style={{ ...HS.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...HS.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease", paddingBottom: 80 }}>
         {renderStep()}
+      </div>
+      {/* Home turtle nav */}
+      <div style={{ position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+        <button onClick={onReturnToServices}
+          style={{
+            width: 44, height: 44, borderRadius: 22, cursor: "pointer", fontSize: 20, padding: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(20,169,162,0.15)",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
+            transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+          }}
+          onMouseDown={e => { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; }}
+          onMouseUp={e => { e.currentTarget.style.borderColor = "rgba(20,169,162,0.15)"; }}
+        >🐢</button>
+        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>Home</span>
       </div>
     </div>
   );
@@ -2889,7 +3245,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 // ===========================================================
 //  INSTANT ALERT FORM
 // ===========================================================
-function InstantAlertForm({ onBackToPortal }) {
+function InstantAlertForm({ onReturnToServices }) {
   // ── Local constants ──
   const C = FC;
 
@@ -2952,6 +3308,7 @@ function InstantAlertForm({ onBackToPortal }) {
 
   const u = (f, v) => setForm((p) => ({ ...p, [f]: v }));
   const toggleChannel = (id) => setForm(p => ({ ...p, channels: { ...p.channels, [id]: !p.channels[id] } }));
+  const autoSave = useAutoSave("nhbp-form-instant-alert", form, step, setForm, setStep);
 
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
 
@@ -2960,6 +3317,7 @@ function InstantAlertForm({ onBackToPortal }) {
   const handleSubmit = () => {
     setTicketNumber(`NHBP-IA-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    autoSave.clear();
     setSubmitted(true);
   };
 
@@ -2970,7 +3328,7 @@ function InstantAlertForm({ onBackToPortal }) {
 
   // ── Local styles ──
   const IA = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.red}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -2982,8 +3340,8 @@ function InstantAlertForm({ onBackToPortal }) {
     stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -3015,7 +3373,7 @@ function InstantAlertForm({ onBackToPortal }) {
             ].filter(([,v]) => v).map(([k, v, accent], i) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < 5 ? 10 : 0 }}>
                 <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
-                <span style={{ fontSize: 13, color: accent ? accentColor : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit", textAlign: "right", maxWidth: "60%" }}>{v}</span>
+                <span style={{ fontSize: 13, color: accent ? accentColor : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)", textAlign: "right", maxWidth: "60%" }}>{v}</span>
               </div>
             ))}
           </FormGlassCard>
@@ -3163,6 +3521,7 @@ function InstantAlertForm({ onBackToPortal }) {
 
   return (
     <div style={IA.container}>
+      {autoSave.showRestore && <RestorePrompt onYes={autoSave.restore} onNo={autoSave.dismiss} />}
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={IA.bgOrb1} /><div style={IA.bgOrb2} /><div style={IA.bgOrb3} />
       {step > 0 && (
@@ -3174,8 +3533,26 @@ function InstantAlertForm({ onBackToPortal }) {
           <div style={IA.progressTrack}><div style={{ ...IA.progressBar, width: `${progress}%`, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}cc)` }} /></div>
         </div>
       )}
-      <div style={{ ...IA.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...IA.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease", paddingBottom: 80 }}>
         {renderStep()}
+      </div>
+      {/* Home turtle nav */}
+      <div style={{ position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+        <button onClick={onReturnToServices}
+          style={{
+            width: 44, height: 44, borderRadius: 22, cursor: "pointer", fontSize: 20, padding: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(20,169,162,0.15)",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
+            transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+          }}
+          onMouseDown={e => { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; }}
+          onMouseUp={e => { e.currentTarget.style.borderColor = "rgba(20,169,162,0.15)"; }}
+        >🐢</button>
+        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>Home</span>
       </div>
     </div>
   );
@@ -3184,7 +3561,7 @@ function InstantAlertForm({ onBackToPortal }) {
 // ===========================================================
 //  TURTLE PRESS — SUB-MENU + QTP FEEDBACK FORM
 // ===========================================================
-function TurtlePressForm({ onBackToPortal }) {
+function TurtlePressForm({ onReturnToServices }) {
   const [subView, setSubView] = useState("menu"); // "menu" | "submission" | "article" | "feedback"
 
   const C = FC;
@@ -3198,7 +3575,7 @@ function TurtlePressForm({ onBackToPortal }) {
     ];
 
     return (
-      <div style={{ minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
+      <div style={{ minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
         <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
         <div style={{ position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}08, transparent 70%)`, pointerEvents: "none" }} />
         <div style={{ position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" }} />
@@ -3223,6 +3600,24 @@ function TurtlePressForm({ onBackToPortal }) {
               </FormGlassCard>
             ))}
           </div>
+        </div>
+        {/* Home turtle nav */}
+        <div style={{ position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+          <button onClick={onReturnToServices}
+            style={{
+              width: 44, height: 44, borderRadius: 22, cursor: "pointer", fontSize: 20, padding: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+              background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+              border: "1px solid rgba(20,169,162,0.15)",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
+              transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+            }}
+            onMouseDown={e => { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; }}
+            onMouseUp={e => { e.currentTarget.style.borderColor = "rgba(20,169,162,0.15)"; }}
+          >🐢</button>
+          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>Home</span>
         </div>
       </div>
     );
@@ -3294,7 +3689,7 @@ function QTPFeedbackSubForm({ onBack }) {
   const progress = step > 0 ? Math.min((step / 7) * 100, 100) : 0;
 
   const FB = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -3306,8 +3701,8 @@ function QTPFeedbackSubForm({ onBack }) {
     stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -3342,7 +3737,7 @@ function QTPFeedbackSubForm({ onBack }) {
             ].map(([k, v, accent], i) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < 4 ? 10 : 0 }}>
                 <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
-                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit" }}>{v}</span>
+                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)" }}>{v}</span>
               </div>
             ))}
           </FormGlassCard>
@@ -3592,7 +3987,7 @@ function QTPSubmissionSubForm({ onBack }) {
   const progress = Math.min((step / 8) * 100, 100);
 
   const SM = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -3604,8 +3999,8 @@ function QTPSubmissionSubForm({ onBack }) {
     stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -3639,7 +4034,7 @@ function QTPSubmissionSubForm({ onBack }) {
             ].map(([k, v, accent], i) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < 4 ? 10 : 0 }}>
                 <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
-                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit" }}>{v}</span>
+                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)" }}>{v}</span>
               </div>
             ))}
           </FormGlassCard>
@@ -3859,11 +4254,11 @@ function QTPSubmissionSubForm({ onBack }) {
         <div style={SM.stepWrap}>
           <h2 style={SM.stepTitle}>Contact Information</h2>
           <p style={SM.stepDesc}>In case we need to reach you about your submission.</p>
-          <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.email.includes("@") && goTo(8)} />
+          <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && validateEmail(form.email) && goTo(8)} />
           <FormInput label="Phone Number" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" onKeyDown={(e) => e.key === "Enter" && goTo(8)} />
           <div style={SM.navRow}>
             <button onClick={() => goTo(6)} style={SM.btnBack}>← Back</button>
-            <button onClick={() => goTo(8)} disabled={!form.email.includes("@")} style={SM.btn}>Review →</button>
+            <button onClick={() => goTo(8)} disabled={!validateEmail(form.email)} style={SM.btn}>Review →</button>
           </div>
         </div>
       );
@@ -4032,7 +4427,7 @@ function QTPArticleSubForm({ onBack }) {
   const progress = step > 0 ? Math.min((step / maxStep) * 100, 100) : 0;
 
   const AR = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -4044,8 +4439,8 @@ function QTPArticleSubForm({ onBack }) {
     stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -4078,7 +4473,7 @@ function QTPArticleSubForm({ onBack }) {
             ].filter(Boolean).map(([k, v, accent], i) => (
               <div key={k + i} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < 5 ? 10 : 0 }}>
                 <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
-                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit", textAlign: "right", maxWidth: "60%" }}>{v}</span>
+                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)", textAlign: "right", maxWidth: "60%" }}>{v}</span>
               </div>
             ))}
           </FormGlassCard>
@@ -4284,11 +4679,11 @@ function QTPArticleSubForm({ onBack }) {
           <div style={AR.stepWrap}>
             <h2 style={AR.stepTitle}>Contact Information</h2>
             <p style={AR.stepDesc}>In case we need to reach you.</p>
-            <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && form.email.includes("@") && goTo(reviewStep)} />
+            <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@email.com" inputRef={inputRef} onKeyDown={(e) => e.key === "Enter" && validateEmail(form.email) && goTo(reviewStep)} />
             <FormInput label="Phone Number" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" onKeyDown={(e) => e.key === "Enter" && goTo(reviewStep)} />
             <div style={AR.navRow}>
               <button onClick={() => goTo(photoStep)} style={AR.btnBack}>← Back</button>
-              <button onClick={() => goTo(reviewStep)} disabled={!form.email.includes("@")} style={AR.btn}>Review →</button>
+              <button onClick={() => goTo(reviewStep)} disabled={!validateEmail(form.email)} style={AR.btn}>Review →</button>
             </div>
           </div>
         );
@@ -4359,7 +4754,7 @@ function QTPArticleSubForm({ onBack }) {
 // ===========================================================
 //  GENERAL / OTHER REQUEST FORM
 // ===========================================================
-function GeneralRequestForm({ onBackToPortal }) {
+function GeneralRequestForm({ onReturnToServices }) {
   const C = FC;
 
   const GR_DEPTS = [
@@ -4419,12 +4814,14 @@ function GeneralRequestForm({ onBackToPortal }) {
   });
 
   const u = (f, v) => setForm((p) => ({ ...p, [f]: v }));
+  const autoSave = useAutoSave("nhbp-form-general-request", form, step, setForm, setStep);
   useEffect(() => { if (inputRef.current) setTimeout(() => inputRef.current?.focus(), 400); }, [step]);
   const goTo = (n) => { if (animating) return; setAnimating(true); setTimeout(() => { setStep(n); setAnimating(false); }, 250); };
 
   const handleSubmit = () => {
     setTicketNumber(`NHBP-GR-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`);
     setSubmissionDate(new Date().toLocaleString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", hour12: true }));
+    autoSave.clear();
     setSubmitted(true);
   };
 
@@ -4433,7 +4830,7 @@ function GeneralRequestForm({ onBackToPortal }) {
 
   // ── Local styles ──
   const GR = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -4445,8 +4842,8 @@ function GeneralRequestForm({ onBackToPortal }) {
     stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -4476,7 +4873,7 @@ function GeneralRequestForm({ onBackToPortal }) {
             {[["Ticket", ticketNumber, true], ["Category", `${areaObj?.icon} ${areaObj?.label}`], ["Subject", form.subject], ["By", `${form.firstName} ${form.lastName}`], ["Submitted", submissionDate]].map(([k, v, accent], i) => (
               <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < 4 ? 10 : 0 }}>
                 <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
-                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: accent ? "monospace" : "inherit", textAlign: "right", maxWidth: "60%" }}>{v}</span>
+                <span style={{ fontSize: 13, color: accent ? C.turquoise : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)", textAlign: "right", maxWidth: "60%" }}>{v}</span>
               </div>
             ))}
           </FormGlassCard>
@@ -4516,7 +4913,7 @@ function GeneralRequestForm({ onBackToPortal }) {
           </div>
           <div style={GR.navRow}>
             <button onClick={() => goTo(0)} style={GR.btnBack}>← Back</button>
-            <button onClick={() => goTo(2)} disabled={!form.firstName || !form.lastName || !form.department || !form.email.includes("@")} style={GR.btn}>Continue →</button>
+            <button onClick={() => goTo(2)} disabled={!form.firstName || !form.lastName || !form.department || !validateEmail(form.email)} style={GR.btn}>Continue →</button>
           </div>
         </div>
       );
@@ -4619,6 +5016,7 @@ function GeneralRequestForm({ onBackToPortal }) {
 
   return (
     <div style={GR.container}>
+      {autoSave.showRestore && <RestorePrompt onYes={autoSave.restore} onNo={autoSave.dismiss} />}
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={GR.bgOrb1} /><div style={GR.bgOrb2} /><div style={GR.bgOrb3} />
       {step > 0 && (
@@ -4630,8 +5028,26 @@ function GeneralRequestForm({ onBackToPortal }) {
           <div style={GR.progressTrack}><div style={{ ...GR.progressBar, width: `${progress}%` }} /></div>
         </div>
       )}
-      <div style={{ ...GR.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...GR.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease", paddingBottom: 80 }}>
         {renderStep()}
+      </div>
+      {/* Home turtle nav */}
+      <div style={{ position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+        <button onClick={onReturnToServices}
+          style={{
+            width: 44, height: 44, borderRadius: 22, cursor: "pointer", fontSize: 20, padding: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(20,169,162,0.15)",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
+            transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+          }}
+          onMouseDown={e => { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; }}
+          onMouseUp={e => { e.currentTarget.style.borderColor = "rgba(20,169,162,0.15)"; }}
+        >🐢</button>
+        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>Home</span>
       </div>
     </div>
   );
@@ -4687,7 +5103,7 @@ export default function NHBPPortal() {
     switch (step) {
       case 0: return formData.service !== null;
       case 1: return formData.name.trim().length > 0;
-      case 2: return formData.email.includes("@");
+      case 2: return validateEmail(formData.email);
       case 3: return formData.department.length > 0;
       case 4: return formData.title.trim().length > 0;
       case 5: return formData.description.trim().length > 10;
@@ -4709,60 +5125,54 @@ export default function NHBPPortal() {
   // ─── ROUTE: VISUAL DESIGNS FORM ─────────────────────────
   if (screen === "visual-designs") {
     return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <VisualDesignForm onBackToPortal={resetToWelcome} />
-      </div>
+      <ErrorBoundary onReturnToServices={resetToWelcome}>
+        <VisualDesignForm onReturnToServices={resetToWelcome} />
+      </ErrorBoundary>
     );
   }
 
   // ─── ROUTE: STATIONERY KIT FORM ─────────────────────
   if (screen === "stationery-kit") {
     return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <StationeryKitForm onBackToPortal={resetToWelcome} />
-      </div>
+      <ErrorBoundary onReturnToServices={resetToWelcome}>
+        <StationeryKitForm onReturnToServices={resetToWelcome} />
+      </ErrorBoundary>
     );
   }
 
   // ─── ROUTE: STUDIO HUB (HEADSHOTS) FORM ────────────
   if (screen === "studio-hub") {
     return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <EmployeeHeadshotsForm onBackToPortal={resetToWelcome} />
-      </div>
+      <ErrorBoundary onReturnToServices={resetToWelcome}>
+        <EmployeeHeadshotsForm onReturnToServices={resetToWelcome} />
+      </ErrorBoundary>
     );
   }
 
   // ─── ROUTE: INSTANT ALERT FORM ─────────────────────
   if (screen === "instant-alert") {
     return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <InstantAlertForm onBackToPortal={resetToWelcome} />
-      </div>
+      <ErrorBoundary onReturnToServices={resetToWelcome}>
+        <InstantAlertForm onReturnToServices={resetToWelcome} />
+      </ErrorBoundary>
     );
   }
 
   // ─── ROUTE: TURTLE PRESS FORM ──────────────────────
   if (screen === "turtle-press") {
     return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <TurtlePressForm onBackToPortal={resetToWelcome} />
-      </div>
+      <ErrorBoundary onReturnToServices={resetToWelcome}>
+        <TurtlePressForm onReturnToServices={resetToWelcome} />
+      </ErrorBoundary>
     );
   }
 
   // ─── ROUTE: GENERAL / OTHER REQUEST FORM ───────────
   if (screen === "general-request") {
     return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <GeneralRequestForm onBackToPortal={resetToWelcome} />
-      </div>
+      <ErrorBoundary onReturnToServices={resetToWelcome}>
+        <GeneralRequestForm onReturnToServices={resetToWelcome} />
+      </ErrorBoundary>
     );
   }
 
@@ -4774,39 +5184,33 @@ export default function NHBPPortal() {
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", textAlign: "center", position: "relative", zIndex: 1, padding: "60px 24px" }}>
 
-          {/* Turtle icon */}
-          <div style={{
-            width: 100, height: 100, borderRadius: 22, fontSize: "52px",
-            background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
-            backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
-            WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
-            border: "1px solid rgba(255,255,255,0.12)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.25), 0 0 40px rgba(20,169,162,0.15)",
+          {/* Turtle icon — 100px glass rounded square with glow */}
+          <div className="glass-full" style={{
+            width: 100, height: 100, borderRadius: 24,
             display: "flex", alignItems: "center", justifyContent: "center",
-            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            boxShadow: "0 0 40px rgba(20,169,162,0.15), 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)",
+            opacity: 0, animation: "fadeSlide 0.7s ease forwards",
             animationDelay: "0s",
           }}>
-            <span style={{ filter: "drop-shadow(0 0 10px rgba(20, 169, 162, 0.5))" }}>🐢</span>
+            <span style={{ fontSize: 48, filter: "drop-shadow(0 0 10px rgba(20, 169, 162, 0.5))" }}>🐢</span>
           </div>
 
           {/* Title */}
           <h1 style={{
-            fontSize: "clamp(48px, 6vw, 72px)", fontWeight: 200, margin: 0,
-            color: "rgba(255,255,255,0.7)", letterSpacing: "0.04em", lineHeight: 1.2,
-            marginTop: 36,
-            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            fontSize: "clamp(48px, 6vw, 72px)", fontWeight: 200, margin: 0, marginTop: 36,
+            color: "var(--text-primary)", letterSpacing: "0.04em", lineHeight: 1.2,
+            opacity: 0, animation: "fadeSlide 0.7s ease forwards",
             animationDelay: "0.15s",
           }}>
             NHBP Communications
           </h1>
 
-          {/* Subtitle */}
+          {/* Subtitle — REQUEST PORTAL */}
           <p style={{
-            fontSize: "clamp(14px, 1.8vw, 20px)", color: "rgba(20,169,162,0.6)",
-            fontWeight: 500, margin: 0,
+            fontSize: "clamp(14px, 1.8vw, 22px)", color: "rgba(20,169,162,0.6)",
+            fontWeight: 500, margin: "24px 0 0",
             letterSpacing: "0.5em", textTransform: "uppercase",
-            marginTop: 20,
-            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            opacity: 0, animation: "fadeSlide 0.7s ease forwards",
             animationDelay: "0.3s",
           }}>
             REQUEST PORTAL
@@ -4814,41 +5218,45 @@ export default function NHBPPortal() {
 
           {/* Decorative divider */}
           <div style={{
-            width: 80, height: 1, marginTop: 24,
-            background: "linear-gradient(90deg, transparent, rgba(20,169,162,0.5), transparent)",
-            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            width: 100, height: 1, margin: "28px 0",
+            background: "linear-gradient(90deg, transparent, rgba(20,169,162,0.6), transparent)",
+            opacity: 0, animation: "fadeSlide 0.7s ease forwards",
             animationDelay: "0.45s",
           }} />
 
           {/* Tagline */}
           <p style={{
             fontSize: "clamp(14px, 1.5vw, 18px)", fontWeight: 300,
-            color: "rgba(255,255,255,0.3)", margin: 0,
-            marginTop: 28,
-            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            color: "var(--text-secondary)", margin: "32px 0 0",
+            lineHeight: 1.6,
+            opacity: 0, animation: "fadeSlide 0.7s ease forwards",
             animationDelay: "0.6s",
           }}>
             Where departments come to create.
           </p>
 
-          {/* Start a Request CTA */}
+          {/* Start a Request CTA — exact spec */}
           <button
             onClick={() => setScreen("form")}
             style={{
-              padding: "18px 52px", fontSize: "clamp(14px, 1.3vw, 16px)", fontWeight: 500,
-              letterSpacing: "0.06em", color: "rgba(20,169,162,0.8)", minWidth: 260,
-              borderRadius: 28, marginTop: 36, cursor: "pointer",
+              padding: "20px 60px", borderRadius: 28, cursor: "pointer",
+              minWidth: 300, marginTop: 40,
               backdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
               WebkitBackdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
               border: "1px solid rgba(20,169,162,0.2)",
               background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+              fontSize: 16, fontWeight: 500, letterSpacing: "0.06em",
+              color: "rgba(20,169,162,0.8)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
               fontFamily: "var(--font-primary)",
-              opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+              opacity: 0, animation: "fadeSlide 0.7s ease forwards",
               animationDelay: "0.75s",
+              transition: "border-color 0.3s ease, box-shadow 0.3s ease",
             }}
+            onMouseDown={e => { e.target.style.borderColor = "rgba(200,80,130,0.25)"; e.target.style.boxShadow = "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 20px rgba(200,80,130,0.1)"; }}
+            onMouseUp={e => { e.target.style.borderColor = "rgba(20,169,162,0.2)"; e.target.style.boxShadow = "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)"; }}
           >
-            Start a Request →
+            Start a Request
           </button>
 
         </div>
@@ -4874,7 +5282,7 @@ export default function NHBPPortal() {
 
           <GlassCard style={{ padding: "14px 32px", marginBottom: 24 }}>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.15em", display: "block" }}>Request</span>
-            <span style={{ fontSize: 24, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "monospace", letterSpacing: "0.05em" }}>{ticketNumber}</span>
+            <span style={{ fontSize: 24, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "var(--font-primary)", letterSpacing: "0.05em" }}>{ticketNumber}</span>
           </GlassCard>
 
           <p style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", lineHeight: 1.8, maxWidth: 400, marginBottom: 28 }}>
@@ -4931,7 +5339,7 @@ export default function NHBPPortal() {
   const inputStyle = {
     width: "100%", maxWidth: 440, margin: "0 auto", background: "transparent",
     border: "none", borderBottom: `2px solid rgba(255,255,255,0.1)`,
-    color: "#f0f0f0", fontSize: 22, fontFamily: "Tahoma, 'Segoe UI', sans-serif",
+    color: "#f0f0f0", fontSize: 22, fontFamily: "var(--font-primary)",
     padding: "14px 0", outline: "none", transition: "border-color 0.3s ease",
     caretColor: NHBP.turquoise, boxSizing: "border-box", textAlign: "left",
   };
@@ -4941,12 +5349,12 @@ export default function NHBPPortal() {
       case 0:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>01 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>01 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px", letterSpacing: "-0.02em" }}>
               What can we help you create?
             </h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Pick the service that best fits your need</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 18, width: "100%", maxWidth: 620, margin: "0 auto" }}>
+            <div className="service-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 18, width: "100%", maxWidth: 680, margin: "0 auto" }}>
               {SERVICES.map(s => (
                 <GlassCard
                   key={s.id}
@@ -5020,7 +5428,7 @@ export default function NHBPPortal() {
       case 1:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>02 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>02 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>What’s your name?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>So we know who we’re working with</p>
             <input ref={inputRef} type="text" placeholder="Type your full name..." value={formData.name}
@@ -5031,7 +5439,7 @@ export default function NHBPPortal() {
       case 2:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>03 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>03 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>
               Great to have you, <span style={{ color: NHBP.turquoiseLight }}>{formData.name.split(" ")[0]}</span>
               <br />What’s your email?
@@ -5045,7 +5453,7 @@ export default function NHBPPortal() {
       case 3:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>04 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>04 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Which department are you with?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Select your department</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 540, justifyContent: "center", margin: "0 auto" }}>
@@ -5060,7 +5468,7 @@ export default function NHBPPortal() {
                       borderRadius: 22, padding: "9px 18px",
                       color: active ? NHBP.turquoiseLight : "rgba(255,255,255,0.5)",
                       fontSize: 13, cursor: "pointer", transition: "all 0.25s ease",
-                      fontFamily: "Tahoma, sans-serif",
+                      fontFamily: "var(--font-primary)",
                       boxShadow: active ? `0 0 16px ${NHBP.turquoise}15` : "none",
                     }}>
                     {d}
@@ -5074,7 +5482,7 @@ export default function NHBPPortal() {
       case 4:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>05 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>05 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Give your project a title</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Something short and descriptive</p>
             <input ref={inputRef} type="text" placeholder='"Spring Pow Wow Flyer" or "Staff Headshots March"'
@@ -5085,7 +5493,7 @@ export default function NHBPPortal() {
       case 5:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>06 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>06 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Tell us about your project</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Purpose, audience, specific ideas — the more detail, the faster we deliver</p>
             <textarea ref={inputRef} placeholder="Describe what you need..."
@@ -5094,7 +5502,7 @@ export default function NHBPPortal() {
                 width: "100%", maxWidth: 520, minHeight: 140, resize: "vertical", margin: "0 auto",
                 background: "rgba(255,255,255,0.02)", backdropFilter: "blur(12px)",
                 border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 14,
-                color: "#f0f0f0", fontSize: 15, fontFamily: "Tahoma, sans-serif",
+                color: "#f0f0f0", fontSize: 15, fontFamily: "var(--font-primary)",
                 padding: "18px", outline: "none", lineHeight: 1.7, caretColor: NHBP.turquoise,
                 boxSizing: "border-box", transition: "border-color 0.3s ease", textAlign: "left",
               }}
@@ -5105,7 +5513,7 @@ export default function NHBPPortal() {
       case 6:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>07 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>07 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>How soon do you need this?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>This helps us prioritize across all departments</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440, margin: "0 auto", width: "100%" }}>
@@ -5167,7 +5575,7 @@ export default function NHBPPortal() {
           style={{
             background: "none", border: "none", color: "rgba(255,255,255,0.35)",
             fontSize: 13, cursor: step === 0 ? "default" : "pointer", padding: "10px 16px",
-            fontFamily: "Tahoma, sans-serif", opacity: step === 0 ? 0.3 : 1,
+            fontFamily: "var(--font-primary)", opacity: step === 0 ? 0.3 : 1,
             transition: "all 0.2s ease",
           }}>
           ← Back
@@ -5192,7 +5600,7 @@ export default function NHBPPortal() {
             color: canAdvance() ? NHBP.turquoiseLight : "rgba(255,255,255,0.2)",
             fontSize: 13, fontWeight: 600, cursor: canAdvance() ? "pointer" : "default",
             padding: "10px 20px", borderRadius: 10,
-            fontFamily: "Tahoma, sans-serif", transition: "all 0.3s ease",
+            fontFamily: "var(--font-primary)", transition: "all 0.3s ease",
             boxShadow: canAdvance() ? `0 0 16px ${NHBP.turquoise}10` : "none",
           }}>
           {step === totalSteps - 1 ? "Submit ✓" : "Next →"}

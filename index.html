@@ -262,6 +262,61 @@
         text-align: left !important;
         unicode-bidi: plaintext !important;
       }
+
+      /* ═══════════════════════════════════════════════════════
+         SPINNER ANIMATION (Task 10)
+         ═══════════════════════════════════════════════════════ */
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         CLICK/TAP TRANSITIONS (Task 5)
+         ═══════════════════════════════════════════════════════ */
+
+      .click-transition {
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .click-transition:active {
+        border-color: rgba(200,80,130,0.25) !important;
+        box-shadow: 0 0 20px rgba(200,80,130,0.1) !important;
+      }
+
+      /* ═══════════════════════════════════════════════════════
+         RESPONSIVE DESIGN (Task 12)
+         ═══════════════════════════════════════════════════════ */
+
+      /* Tablet: 2 columns */
+      @media (max-width: 1024px) and (min-width: 768px) {
+        .service-grid {
+          grid-template-columns: repeat(2, 1fr) !important;
+        }
+      }
+
+      /* Mobile: 1 column */
+      @media (max-width: 767px) {
+        .service-grid {
+          grid-template-columns: 1fr !important;
+        }
+      }
+
+      /* Prevent horizontal scroll */
+      html, body {
+        overflow-x: hidden;
+        max-width: 100vw;
+      }
+
+      /* Form field styling (Task 7) */
+      input, textarea, select {
+        font-family: var(--font-primary);
+      }
+
+      input:focus, textarea:focus, select:focus {
+        border-color: rgb(20, 169, 162) !important;
+        outline: none;
+      }
     </style>
   </head>
   <body>
