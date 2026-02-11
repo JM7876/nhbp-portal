@@ -4772,56 +4772,61 @@ export default function NHBPPortal() {
       <div style={{ minHeight: "100vh", color: "var(--text-primary)", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <PortalBackground />
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center", position: "relative", zIndex: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", textAlign: "center", position: "relative", zIndex: 1, padding: "60px 24px" }}>
 
-          {/* Turtle icon — 84px glass rounded square with glow */}
-          <div className="glass-full" style={{
-            width: 84, height: 84, borderRadius: 20,
+          {/* Turtle icon */}
+          <div style={{
+            width: 100, height: 100, borderRadius: 22, fontSize: "52px",
+            background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+            backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.25), 0 0 40px rgba(20,169,162,0.15)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            marginBottom: 28,
-            boxShadow: `0 0 40px ${NHBP.turquoiseGlow}, 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)`,
-            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
-            animationDelay: "0.1s",
+            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            animationDelay: "0s",
           }}>
-            <span style={{ fontSize: 40, filter: "drop-shadow(0 0 10px rgba(20, 169, 162, 0.5))" }}>🐢</span>
+            <span style={{ filter: "drop-shadow(0 0 10px rgba(20, 169, 162, 0.5))" }}>🐢</span>
           </div>
 
-          {/* Title — large, thin, commanding */}
+          {/* Title */}
           <h1 style={{
-            fontSize: 44, fontWeight: 200, margin: 0,
-            color: "var(--text-primary)", letterSpacing: "0.05em", lineHeight: 1.2,
-            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
-            animationDelay: "0.25s",
+            fontSize: "clamp(48px, 6vw, 72px)", fontWeight: 200, margin: 0,
+            color: "rgba(255,255,255,0.7)", letterSpacing: "0.04em", lineHeight: 1.2,
+            marginTop: 36,
+            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            animationDelay: "0.15s",
           }}>
             NHBP Communications
           </h1>
 
           {/* Subtitle */}
           <p style={{
-            fontSize: 14, color: "var(--text-accent-bright)",
-            fontWeight: "var(--weight-regular)", margin: "20px 0 0",
-            letterSpacing: "0.4em", textTransform: "uppercase",
-            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
-            animationDelay: "0.4s",
+            fontSize: "clamp(14px, 1.8vw, 20px)", color: "rgba(20,169,162,0.6)",
+            fontWeight: 500, margin: 0,
+            letterSpacing: "0.5em", textTransform: "uppercase",
+            marginTop: 20,
+            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            animationDelay: "0.3s",
           }}>
-            Request Portal
+            REQUEST PORTAL
           </p>
 
           {/* Decorative divider */}
           <div style={{
-            width: 60, height: 1, margin: "28px 0",
-            background: `linear-gradient(90deg, transparent, ${NHBP.turquoise}, transparent)`,
-            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
-            animationDelay: "0.4s",
+            width: 80, height: 1, marginTop: 24,
+            background: "linear-gradient(90deg, transparent, rgba(20,169,162,0.5), transparent)",
+            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            animationDelay: "0.45s",
           }} />
 
           {/* Tagline */}
           <p style={{
-            fontSize: 14, fontWeight: "var(--weight-light)",
-            color: "var(--text-secondary)", margin: "0 0 36px",
-            lineHeight: 1.6,
-            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
-            animationDelay: "0.55s",
+            fontSize: "clamp(14px, 1.5vw, 18px)", fontWeight: 300,
+            color: "rgba(255,255,255,0.3)", margin: 0,
+            marginTop: 28,
+            opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+            animationDelay: "0.6s",
           }}>
             Where departments come to create.
           </p>
@@ -4830,17 +4835,17 @@ export default function NHBPPortal() {
           <button
             onClick={() => setScreen("form")}
             style={{
-              padding: "16px 44px", borderRadius: 28, cursor: "pointer",
+              padding: "18px 52px", fontSize: "clamp(14px, 1.3vw, 16px)", fontWeight: 500,
+              letterSpacing: "0.06em", color: "rgba(20,169,162,0.8)", minWidth: 260,
+              borderRadius: 28, marginTop: 36, cursor: "pointer",
               backdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
               WebkitBackdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
               border: "1px solid rgba(20,169,162,0.2)",
               background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
-              fontSize: 14, fontWeight: 500, letterSpacing: "0.06em",
-              color: "rgba(20,169,162,0.8)",
               boxShadow: "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
               fontFamily: "var(--font-primary)",
-              opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
-              animationDelay: "0.7s",
+              opacity: 0, animation: "fadeSlide 0.8s ease forwards",
+              animationDelay: "0.75s",
             }}
           >
             Start a Request →
