@@ -4846,19 +4846,23 @@ export default function NHBPPortal() {
             Where departments come to create.
           </p>
 
-          {/* Start a Request CTA — DO NOT MODIFY */}
-          <GlassCard
+          {/* Start a Request CTA */}
+          <button
             onClick={() => setScreen("form")}
-            style={{ padding: "16px 44px", cursor: "pointer" }}
+            style={{
+              padding: "12px 32px", borderRadius: 28, cursor: "pointer",
+              backdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
+              border: "1px solid rgba(20,169,162,0.2)",
+              background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+              fontSize: 12, fontWeight: 500, letterSpacing: "0.06em",
+              color: "rgba(20,169,162,0.8)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
+              fontFamily: "var(--font-primary)",
+            }}
           >
-            <span style={{
-              fontSize: 16, fontWeight: 600, letterSpacing: "0.04em",
-              background: `linear-gradient(135deg, ${NHBP.turquoiseLight}, #fff)`,
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>
-              Start a Request →
-            </span>
-          </GlassCard>
+            Start a Request →
+          </button>
 
         </div>
       </div>
@@ -5160,13 +5164,19 @@ export default function NHBPPortal() {
         }} />
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 28px", position: "relative", zIndex: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "rgba(255,255,255,0.4)" }}>
-          🐢 NHBP Communications
-        </span>
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
-          {formData.service && `${SERVICES.find(s => s.id === formData.service)?.icon} ${SERVICES.find(s => s.id === formData.service)?.label}`}
-        </span>
+      <div style={{ padding: "16px 20px", position: "relative", zIndex: 10, display: "flex", alignItems: "center" }}>
+        <button
+          onClick={toggleTheme}
+          className="glass-full glass-interactive"
+          style={{
+            width: 28, height: 28, borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", fontSize: 14, lineHeight: 1,
+            padding: 0,
+          }}
+        >
+          {theme === "night" ? "☀️" : "🌙"}
+        </button>
       </div>
 
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 28px 100px", position: "relative", zIndex: 1 }}>
