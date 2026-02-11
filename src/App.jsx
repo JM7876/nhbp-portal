@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 const NHBP = {
   turquoise: "#14A9A2",
@@ -46,25 +46,68 @@ const DEPARTMENTS = [
   "Pow Wow Committee", "Public Safety", "Social Services", "Tribal Council", "Youth Services"
 ];
 
+// ═══════════════════════════════════════════════════════════
+//  AUTO-SAVE HELPERS
+// ═══════════════════════════════════════════════════════════
+
+const SAVE_PREFIX = "nhbp-form-";
+
+const saveFormData = (serviceKey, data, step) => {
+  try {
+    localStorage.setItem(`${SAVE_PREFIX}${serviceKey}`, JSON.stringify({ data, step, ts: Date.now() }));
+  } catch (_) { /* quota exceeded — ignore */ }
+};
+
+const loadFormData = (serviceKey) => {
+  try {
+    const raw = localStorage.getItem(`${SAVE_PREFIX}${serviceKey}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Date.now() - parsed.ts > 7 * 24 * 60 * 60 * 1000) { clearFormData(serviceKey); return null; }
+    return parsed;
+  } catch (_) { return null; }
+};
+
+const clearFormData = (serviceKey) => {
+  try { localStorage.removeItem(`${SAVE_PREFIX}${serviceKey}`); } catch (_) { /* ignore */ }
+};
+
+const useAutoSave = (serviceKey, formData, step) => {
+  const timer = useRef(null);
+  useEffect(() => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => saveFormData(serviceKey, formData, step), 500);
+    return () => { if (timer.current) clearTimeout(timer.current); };
+  }, [serviceKey, formData, step]);
+};
+
 const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
   const [hovered, setHovered] = useState(false);
+  const [pressed, setPressed] = useState(false);
   return (
     <div
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseLeave={() => { setHovered(false); setPressed(false); }}
+      onMouseDown={() => onClick && setPressed(true)}
+      onMouseUp={() => setPressed(false)}
       style={{
         background: active
           ? `linear-gradient(135deg, ${NHBP.turquoise}18, ${NHBP.turquoise}08)`
           : "rgba(255,255,255,0.03)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        border: `1px solid ${active ? NHBP.turquoise + "60" : hovered ? NHBP.turquoise + "30" : "rgba(255,255,255,0.06)"}`,
+        border: `1px solid ${
+          active ? "rgba(200,80,130,0.25)"
+          : pressed ? "rgba(200,80,130,0.25)"
+          : hovered ? NHBP.turquoise + "30"
+          : "rgba(255,255,255,0.06)"
+        }`,
         borderRadius: 16,
-        transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, background 0.3s ease",
         cursor: onClick ? "pointer" : "default",
         boxShadow: active
-          ? `0 0 30px ${NHBP.turquoiseGlow}, inset 0 1px 0 rgba(255,255,255,0.08)`
+          ? `0 8px 32px rgba(0,0,0,0.25), 0 0 20px rgba(200,80,130,0.1)`
+          : pressed
+          ? `0 8px 32px rgba(0,0,0,0.25), 0 0 20px rgba(200,80,130,0.1)`
           : hovered
           ? `0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)`
           : `inset 0 1px 0 rgba(255,255,255,0.04)`,
@@ -77,7 +120,7 @@ const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
       <div style={{
         position: "absolute",
         top: 0, left: 0, right: 0, height: 1,
-        background: `linear-gradient(90deg, transparent, ${active ? NHBP.turquoise + "40" : "rgba(255,255,255,0.08)"}, transparent)`,
+        background: `linear-gradient(90deg, transparent, ${active ? "rgba(200,80,130,0.4)" : "rgba(255,255,255,0.08)"}, transparent)`,
       }} />
       {children}
     </div>
@@ -193,7 +236,7 @@ const FormBadge = ({ name, color }) => (
 );
 
 const VdStepLabel = ({ n, totalSteps }) => (
-  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", marginBottom: 12, fontFamily: "monospace" }}>
+  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", letterSpacing: "0.2em", marginBottom: 12, fontFamily: "var(--font-primary)" }}>
     {String(n).padStart(2, "0")} / {totalSteps}
   </p>
 );
@@ -208,23 +251,22 @@ const VdHint = ({ children }) => (
 
 const PortalBackground = () => <div className="concept-e-bg" />;
 
-const BackToPortalButton = React.memo(({ onClick }) => (
+const HomeButton = React.memo(({ onClick }) => (
   <button
     onClick={onClick}
     style={{
-      position: "fixed", top: 16, left: 16, zIndex: 9999,
-      background: "rgba(8,9,12,0.85)", backdropFilter: "blur(16px)",
-      border: `1px solid ${NHBP.turquoise}30`,
-      borderRadius: 10, padding: "8px 16px",
-      color: NHBP.turquoiseLight, fontSize: 12, fontWeight: 600,
-      cursor: "pointer", fontFamily: "var(--font-primary)",
-      transition: "all 0.25s ease",
-      boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+      background: "none", border: "none", cursor: "pointer", padding: "4px 12px",
     }}
-    onMouseEnter={e => { e.target.style.borderColor = NHBP.turquoise + "60"; e.target.style.boxShadow = `0 4px 24px rgba(0,0,0,0.5), 0 0 12px ${NHBP.turquoiseGlow}`; }}
-    onMouseLeave={e => { e.target.style.borderColor = NHBP.turquoise + "30"; e.target.style.boxShadow = "0 4px 20px rgba(0,0,0,0.4)"; }}
   >
-    ← Back to Portal
+    <span style={{
+      display: "flex", alignItems: "center", justifyContent: "center",
+      width: 36, height: 36, borderRadius: 18,
+      background: "rgba(255,255,255,0.04)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      fontSize: 18, transition: "all 0.3s ease",
+    }}>🐢</span>
+    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-primary)", fontWeight: 500, letterSpacing: "0.05em" }}>Home</span>
   </button>
 ));
 
@@ -643,7 +685,7 @@ const SectionCard = ({ icon, title, subtitle, children, isDone }) => {
 };
 
 // ─── MAIN COMPONENT ────────────────────────────────────
-function VisualDesignForm({ onBackToPortal }) {
+function VisualDesignForm({ onBackToPortal, onHome }) {
   const [step, setStep] = useState(0);
   const [anim, setAnim] = useState(false);
   const [form, setForm] = useState({
@@ -798,14 +840,14 @@ function VisualDesignForm({ onBackToPortal }) {
     const selectedStyle = STYLES.find(s => s.id === form.styleDir);
     const activePalette = getActivePalette();
     return (
-      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+      <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <BG />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", zIndex: 1 }}>
           <div style={{ width: 76, height: 76, borderRadius: "50%", background: `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, color: "#fff", marginBottom: 24, boxShadow: `0 0 50px ${NHBP.turquoiseGlow}` }}>✓</div>
           <h1 style={{ fontSize: 30, fontWeight: 300, margin: "0 0 16px" }}>Request submitted!</h1>
           <Glass style={{ padding: "12px 28px", marginBottom: 20 }}>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.15em", display: "block" }}>{form.pieceType === "special-request" ? "Special Request" : "Visual Design Request"}</span>
-            <span style={{ fontSize: 22, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "monospace" }}>{ticket}</span>
+            <span style={{ fontSize: 22, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "var(--font-primary)" }}>{ticket}</span>
           </Glass>
           <Glass style={{ padding: "18px 24px", maxWidth: 440, width: "100%", textAlign: "left" }}>
             {form.pieceType === "special-request" ? (
@@ -870,7 +912,7 @@ function VisualDesignForm({ onBackToPortal }) {
   const inputStyle = {
     width: "100%", background: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10,
-    color: "#f0f0f0", fontSize: 14, fontFamily: "Tahoma, sans-serif",
+    color: "#f0f0f0", fontSize: 14, fontFamily: "var(--font-primary)",
     padding: "12px 14px", outline: "none", caretColor: NHBP.turquoise,
     boxSizing: "border-box", transition: "border-color 0.3s",
   };
@@ -999,7 +1041,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     <div style={{ marginTop: 10, animation: "fadeSlide 0.3s ease" }}>
                       <input ref={inputRef} placeholder='Describe the size (e.g. "24 × 36 inches")'
                         value={form.customSize} onChange={e => set("customSize", e.target.value)}
-                        style={{ width: "100%", maxWidth: 400, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 16, fontFamily: "Tahoma, sans-serif", padding: "12px 0", outline: "none", caretColor: NHBP.turquoise }} />
+                        style={{ width: "100%", maxWidth: 400, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 16, fontFamily: "var(--font-primary)", padding: "12px 0", outline: "none", caretColor: NHBP.turquoise }} />
                     </div>
                   )}
                 </div>
@@ -1019,7 +1061,7 @@ function VisualDesignForm({ onBackToPortal }) {
                       padding: "14px 16px", borderRadius: 12, cursor: "pointer",
                       background: form.multiPage ? `${NHBP.turquoise}12` : "rgba(255,255,255,0.02)",
                       border: `1px solid ${form.multiPage ? NHBP.turquoise + "40" : "rgba(255,255,255,0.08)"}`,
-                      transition: "all 0.3s ease", fontFamily: "Tahoma, sans-serif",
+                      transition: "all 0.3s ease", fontFamily: "var(--font-primary)",
                       WebkitAppearance: "none", textAlign: "left",
                     }}>
                     <div style={{
@@ -1080,7 +1122,7 @@ function VisualDesignForm({ onBackToPortal }) {
                       padding: "14px 16px", borderRadius: 12, cursor: "pointer",
                       background: form.specialRequest ? `${NHBP.pink}12` : "rgba(255,255,255,0.02)",
                       border: `1px solid ${form.specialRequest ? NHBP.pink + "40" : "rgba(255,255,255,0.08)"}`,
-                      transition: "all 0.3s ease", fontFamily: "Tahoma, sans-serif",
+                      transition: "all 0.3s ease", fontFamily: "var(--font-primary)",
                       WebkitAppearance: "none", textAlign: "left",
                     }}>
                     <div style={{
@@ -1189,7 +1231,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     style={{
                       width: "100%", padding: "16px 24px", borderRadius: 14, cursor: "pointer",
                       background: `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseLight})`,
-                      border: "none", fontFamily: "Tahoma, sans-serif", fontSize: 15, fontWeight: 700,
+                      border: "none", fontFamily: "var(--font-primary)", fontSize: 15, fontWeight: 700,
                       color: "#1a1a2e", letterSpacing: "0.03em",
                       boxShadow: `0 4px 20px ${NHBP.turquoise}30`,
                       animation: "fadeSlide 0.3s ease",
@@ -1236,7 +1278,7 @@ function VisualDesignForm({ onBackToPortal }) {
                 <input ref={inputRef} placeholder='Describe the size (e.g. "24 × 36 inches")'
                   value={form.customSize} onChange={e => set("customSize", e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && form.customSize.trim()) goNext(); }}
-                  style={{ width: "100%", maxWidth: 400, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 16, fontFamily: "Tahoma, sans-serif", padding: "12px 0", outline: "none", caretColor: NHBP.turquoise }} />
+                  style={{ width: "100%", maxWidth: 400, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 16, fontFamily: "var(--font-primary)", padding: "12px 0", outline: "none", caretColor: NHBP.turquoise }} />
               </div>
             )}
           </div>
@@ -1420,7 +1462,7 @@ function VisualDesignForm({ onBackToPortal }) {
                     <div style={{ marginTop: 14, animation: "fadeSlide 0.3s ease" }}>
                       <input ref={inputRef} placeholder="Describe the colors you're envisioning..."
                         value={form.customPalette} onChange={e => set("customPalette", e.target.value)}
-                        style={{ width: "100%", maxWidth: 440, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 14, fontFamily: "Tahoma, sans-serif", padding: "10px 0", outline: "none", caretColor: NHBP.turquoise }} />
+                        style={{ width: "100%", maxWidth: 440, background: "transparent", border: "none", borderBottom: "2px solid rgba(255,255,255,0.1)", color: "#f0f0f0", fontSize: 14, fontFamily: "var(--font-primary)", padding: "10px 0", outline: "none", caretColor: NHBP.turquoise }} />
                     </div>
                   )}
                 </div>
@@ -1509,7 +1551,7 @@ function VisualDesignForm({ onBackToPortal }) {
                       padding: "12px 16px", borderRadius: 12, cursor: "pointer",
                       background: form.needVerbiage ? `${NHBP.pink}12` : "rgba(255,255,255,0.02)",
                       border: `1px solid ${form.needVerbiage ? NHBP.pink + "40" : "rgba(255,255,255,0.08)"}`,
-                      transition: "all 0.3s ease", fontFamily: "Tahoma, sans-serif",
+                      transition: "all 0.3s ease", fontFamily: "var(--font-primary)",
                       WebkitAppearance: "none", textAlign: "left",
                     }}>
                     <div style={{
@@ -1553,7 +1595,7 @@ function VisualDesignForm({ onBackToPortal }) {
                                 display: "inline-flex", alignItems: "center", gap: 5,
                                 padding: "6px 10px", borderRadius: 20, cursor: "pointer",
                                 background: `${NHBP.pink}18`, border: `1px solid ${NHBP.pink}35`,
-                                color: NHBP.pink, fontSize: 12, fontFamily: "Tahoma, sans-serif",
+                                color: NHBP.pink, fontSize: 12, fontFamily: "var(--font-primary)",
                                 WebkitAppearance: "none", transition: "all 0.2s",
                               }}>
                               {kw} <span style={{ opacity: 0.6 }}>✕</span>
@@ -1591,7 +1633,7 @@ function VisualDesignForm({ onBackToPortal }) {
                                     background: selected ? `${NHBP.turquoise}20` : "rgba(255,255,255,0.03)",
                                     border: `1px solid ${selected ? NHBP.turquoise + "40" : "rgba(255,255,255,0.08)"}`,
                                     color: selected ? NHBP.turquoiseLight : "rgba(255,255,255,0.5)",
-                                    fontSize: 12, fontFamily: "Tahoma, sans-serif",
+                                    fontSize: 12, fontFamily: "var(--font-primary)",
                                     WebkitAppearance: "none", transition: "all 0.2s",
                                   }}>
                                   {kw}
@@ -1617,7 +1659,7 @@ function VisualDesignForm({ onBackToPortal }) {
                                         background: selected ? `${NHBP.turquoise}20` : "rgba(255,255,255,0.03)",
                                         border: `1px solid ${selected ? NHBP.turquoise + "40" : "rgba(255,255,255,0.06)"}`,
                                         color: selected ? NHBP.turquoiseLight : "rgba(255,255,255,0.4)",
-                                        fontSize: 11, fontFamily: "Tahoma, sans-serif",
+                                        fontSize: 11, fontFamily: "var(--font-primary)",
                                         WebkitAppearance: "none", transition: "all 0.2s",
                                       }}>
                                       {kw}
@@ -1659,7 +1701,7 @@ function VisualDesignForm({ onBackToPortal }) {
                             background: form.customKeyword.trim() ? `${NHBP.turquoise}20` : "rgba(255,255,255,0.03)",
                             border: `1px solid ${form.customKeyword.trim() ? NHBP.turquoise + "40" : "rgba(255,255,255,0.06)"}`,
                             color: form.customKeyword.trim() ? NHBP.turquoiseLight : "rgba(255,255,255,0.2)",
-                            fontSize: 12, fontWeight: 600, fontFamily: "Tahoma, sans-serif",
+                            fontSize: 12, fontWeight: 600, fontFamily: "var(--font-primary)",
                             WebkitAppearance: "none", transition: "all 0.2s", flexShrink: 0,
                           }}>
                           + Add
@@ -1679,7 +1721,7 @@ function VisualDesignForm({ onBackToPortal }) {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
                   <span style={{ fontSize: 10, color: "rgba(255,255,255,0.2)" }}>Write your own body text</span>
                   <span style={{
-                    fontSize: 10, fontFamily: "monospace",
+                    fontSize: 10, fontFamily: "var(--font-primary)",
                     color: wordCount > 600 ? NHBP.red : wordCount > 500 ? "#e0a630" : "rgba(255,255,255,0.2)",
                     transition: "color 0.3s",
                   }}>
@@ -1816,7 +1858,7 @@ function VisualDesignForm({ onBackToPortal }) {
                 width: "100%", maxWidth: 480, minHeight: 100, resize: "vertical",
                 background: "rgba(255,255,255,0.02)", backdropFilter: "blur(12px)",
                 border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12,
-                color: "#f0f0f0", fontSize: 14, fontFamily: "Tahoma, sans-serif",
+                color: "#f0f0f0", fontSize: 14, fontFamily: "var(--font-primary)",
                 padding: "16px", outline: "none", lineHeight: 1.6, caretColor: NHBP.turquoise,
                 boxSizing: "border-box", transition: "border-color 0.3s",
               }} />
@@ -1858,7 +1900,7 @@ function VisualDesignForm({ onBackToPortal }) {
             <div style={{ marginTop: 16 }}>
               <Hint>Have a specific date in mind? (optional)</Hint>
               <input type="date" value={form.deadline} onChange={e => set("deadline", e.target.value)}
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#f0f0f0", fontSize: 14, fontFamily: "Tahoma, sans-serif", padding: "12px 16px", outline: "none", caretColor: NHBP.turquoise, colorScheme: "dark" }} />
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, color: "#f0f0f0", fontSize: 14, fontFamily: "var(--font-primary)", padding: "12px 16px", outline: "none", caretColor: NHBP.turquoise, colorScheme: "dark" }} />
             </div>
           </div>
         );
@@ -1976,7 +2018,7 @@ function VisualDesignForm({ onBackToPortal }) {
   };
 
   return (
-    <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <BG />
       {/* Progress bar */}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.03)", zIndex: 100 }}>
@@ -1987,28 +2029,19 @@ function VisualDesignForm({ onBackToPortal }) {
         {renderStep()}
       </div>
       {/* Nav */}
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", background: "linear-gradient(0deg, rgba(8,9,12,0.95) 50%, transparent)", backdropFilter: "blur(12px)" }}>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 24px", maxWidth: 680, margin: "0 auto", background: "linear-gradient(0deg, rgba(8,9,12,0.95) 50%, transparent)" }}>
         <button onClick={goBack} disabled={step === 0}
-          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", fontSize: 13, cursor: step === 0 ? "default" : "pointer", padding: "10px 16px", fontFamily: "Tahoma, sans-serif", opacity: step === 0 ? 0.3 : 1, transition: "opacity 0.3s" }}>
+          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.3)", fontSize: 14, cursor: step === 0 ? "default" : "pointer", padding: "10px 16px", fontFamily: "var(--font-primary)", fontWeight: 400, minWidth: 80, opacity: step === 0 ? 0.3 : 1, transition: "opacity 0.3s" }}>
           ← Back
         </button>
-        <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div key={i} style={{
-              height: 5, borderRadius: 3, width: i === step ? 24 : 5,
-              background: i === step ? NHBP.turquoise : i < step ? NHBP.turquoise + "45" : "rgba(255,255,255,0.08)",
-              boxShadow: i === step ? `0 0 8px ${NHBP.turquoiseGlow}` : "none",
-              transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
-            }} />
-          ))}
-        </div>
+        <HomeButton onClick={onHome} />
         <button onClick={goNext} disabled={!canAdvance()}
           style={{
             background: canAdvance() ? `${NHBP.turquoise}12` : "transparent",
             border: `1px solid ${canAdvance() ? NHBP.turquoise + "28" : "rgba(255,255,255,0.04)"}`,
             color: canAdvance() ? NHBP.turquoiseLight : "rgba(255,255,255,0.15)",
-            fontSize: 13, fontWeight: 600, cursor: canAdvance() ? "pointer" : "default",
-            padding: "10px 20px", borderRadius: 10, fontFamily: "Tahoma, sans-serif",
+            fontSize: 14, fontWeight: 500, cursor: canAdvance() ? "pointer" : "default",
+            padding: "10px 20px", borderRadius: 10, fontFamily: "var(--font-primary)", minWidth: 80,
             transition: "all 0.3s ease",
             boxShadow: canAdvance() ? `0 0 14px ${NHBP.turquoise}0a` : "none",
           }}>
@@ -2209,7 +2242,7 @@ const BusinessCardSummary = ({ data, location, enterprise }) => {
           border: `1px solid ${NHBP.turquoise}${generating ? "15" : "40"}`,
           color: generating ? "rgba(255,255,255,0.3)" : NHBP.turquoiseLight,
           fontSize: 12, fontWeight: 600, cursor: generating ? "default" : "pointer",
-          fontFamily: "Tahoma, sans-serif", letterSpacing: "0.05em",
+          fontFamily: "var(--font-primary)", letterSpacing: "0.05em",
           transition: "all 0.3s ease",
         }}>
           {generating ? "Generating PDF..." : "⤓  Download Filled Business Card PDF"}
@@ -2258,7 +2291,7 @@ const NamePlateSummary = ({ data }) => {
           border: `1px solid ${NHBP.turquoise}${generating ? "15" : "40"}`,
           color: generating ? "rgba(255,255,255,0.3)" : NHBP.turquoiseLight,
           fontSize: 12, fontWeight: 600, cursor: generating ? "default" : "pointer",
-          fontFamily: "Tahoma, sans-serif", letterSpacing: "0.05em",
+          fontFamily: "var(--font-primary)", letterSpacing: "0.05em",
           transition: "all 0.3s ease",
         }}>
           {generating ? "Generating PDF..." : "⤓  Download Filled Name Plate PDF"}
@@ -2268,7 +2301,7 @@ const NamePlateSummary = ({ data }) => {
   );
 };
 
-function StationeryKitForm({ onBackToPortal }) {
+function StationeryKitForm({ onBackToPortal, onHome }) {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [fading, setFading] = useState(false);
@@ -2338,7 +2371,7 @@ function StationeryKitForm({ onBackToPortal }) {
   const Background = PortalBackground;
 
   const slideStyle = { width: "100%", maxWidth: 620, transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)", opacity: fading ? 0 : 1, transform: fading ? `translateY(${direction * 24}px)` : "translateY(0)" };
-  const inputStyle = { width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#f0f0f0", fontSize: 18, fontFamily: "Tahoma, 'Segoe UI', sans-serif", padding: "14px 16px", outline: "none", transition: "border-color 0.3s ease", caretColor: NHBP.turquoise, boxSizing: "border-box", direction: "ltr", textAlign: "left", unicodeBidi: "plaintext" };
+  const inputStyle = { width: "100%", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, color: "#f0f0f0", fontSize: 18, fontFamily: "var(--font-primary)", padding: "14px 16px", outline: "none", transition: "border-color 0.3s ease", caretColor: NHBP.turquoise, boxSizing: "border-box", direction: "ltr", textAlign: "left", unicodeBidi: "plaintext" };
   const labelStyle = { fontSize: 12, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 6, display: "block" };
 
   // ═══════════ CONFIRMATION ═══════════
@@ -2346,7 +2379,7 @@ function StationeryKitForm({ onBackToPortal }) {
     const loc = OFFICE_LOCATIONS.find(l => l.id === form.officeLocation);
     const ent = ENTERPRISES.find(e => e.id === form.enterprise);
     return (
-      <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", direction: "ltr" }}>
+      <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", direction: "ltr" }}>
         <Background />
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "40px 24px", position: "relative", zIndex: 1, animation: "scaleIn 0.5s ease" }}>
           <div style={{ width: 80, height: 80, borderRadius: "50%", marginBottom: 28, background: `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseDark})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 36, color: "#fff", boxShadow: `0 0 50px ${NHBP.turquoiseGlow}` }}>✓</div>
@@ -2354,7 +2387,7 @@ function StationeryKitForm({ onBackToPortal }) {
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", margin: "0 0 24px" }}>Your order is ready for printing verification</p>
           <GlassCard style={{ padding: "14px 32px", marginBottom: 24 }}>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.15em", display: "block" }}>Request</span>
-            <span style={{ fontSize: 24, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "monospace" }}>{ticketNumber}</span>
+            <span style={{ fontSize: 24, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "var(--font-primary)" }}>{ticketNumber}</span>
           </GlassCard>
 
           {form.items.includes("business-cards") && (
@@ -2389,7 +2422,7 @@ function StationeryKitForm({ onBackToPortal }) {
     switch (step) {
       case 0: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>01 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>01 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Which enterprise are you with?</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>This determines your card template and logo</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
@@ -2408,7 +2441,7 @@ function StationeryKitForm({ onBackToPortal }) {
 
       case 1: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>02 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>02 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>What do you need?</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Select all that apply</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
@@ -2433,7 +2466,7 @@ function StationeryKitForm({ onBackToPortal }) {
 
       case 2: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>03 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>03 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>What's the reason?</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Helps us know if this is a first order or reprint</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
@@ -2449,7 +2482,7 @@ function StationeryKitForm({ onBackToPortal }) {
 
       case 3: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>04 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>04 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Your information</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Exactly as it should appear on your stationery</p>
           <div style={{ maxWidth: 440, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -2486,7 +2519,7 @@ function StationeryKitForm({ onBackToPortal }) {
 
       case 4: return (
         <div style={slideStyle}>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>05 / 0{totalSteps}</p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>05 / 0{totalSteps}</p>
           <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Select your office location</h2>
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>This address appears on the back of your business card</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
@@ -2506,7 +2539,7 @@ function StationeryKitForm({ onBackToPortal }) {
         const ent = ENTERPRISES.find(e => e.id === form.enterprise);
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>06 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>06 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Review & Submit</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Make sure everything looks right</p>
             {form.items.includes("business-cards") && (
@@ -2544,7 +2577,7 @@ function StationeryKitForm({ onBackToPortal }) {
   };
 
   return (
-    <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", direction: "ltr" }}>
+    <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", direction: "ltr" }}>
       <Background />
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", padding: "0 24px" }}>
         <div style={{ padding: "20px 0 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
@@ -2559,10 +2592,11 @@ function StationeryKitForm({ onBackToPortal }) {
           </div>
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "32px 0" }}>{renderStep()}</div>
-        <div style={{ padding: "16px 0 28px", display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 620, width: "100%" }}>
-          <button onClick={goBack} style={{ background: "none", border: "none", color: step === 0 ? "transparent" : "rgba(255,255,255,0.3)", fontSize: 14, cursor: step === 0 ? "default" : "pointer", fontFamily: "Tahoma, sans-serif", padding: "8px 0", pointerEvents: step === 0 ? "none" : "auto" }}>← Back</button>
+        <div style={{ padding: "16px 0 28px", display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 680, width: "100%" }}>
+          <button onClick={goBack} style={{ background: "none", border: "none", color: step === 0 ? "transparent" : "rgba(255,255,255,0.3)", fontSize: 14, cursor: step === 0 ? "default" : "pointer", fontFamily: "var(--font-primary)", fontWeight: 400, minWidth: 80, padding: "8px 0", pointerEvents: step === 0 ? "none" : "auto" }}>← Back</button>
+          <HomeButton onClick={onHome} />
           {(step > 0 || form.items.length > 0) && (
-            <button onClick={canAdvance() ? goNext : undefined} style={{ background: canAdvance() ? `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseDark})` : "rgba(255,255,255,0.05)", border: "none", borderRadius: 28, color: canAdvance() ? "#fff" : "rgba(255,255,255,0.2)", fontSize: 14, fontWeight: 600, padding: "12px 32px", cursor: canAdvance() ? "pointer" : "default", transition: "all 0.3s ease", boxShadow: canAdvance() ? `0 4px 20px ${NHBP.turquoiseGlow}` : "none", fontFamily: "Tahoma, sans-serif" }}>
+            <button onClick={canAdvance() ? goNext : undefined} style={{ background: canAdvance() ? `linear-gradient(135deg, ${NHBP.turquoise}, ${NHBP.turquoiseDark})` : "rgba(255,255,255,0.05)", border: "none", borderRadius: 28, color: canAdvance() ? "#fff" : "rgba(255,255,255,0.2)", fontSize: 14, fontWeight: 500, padding: "12px 32px", cursor: canAdvance() ? "pointer" : "default", transition: "all 0.3s ease", boxShadow: canAdvance() ? `0 4px 20px ${NHBP.turquoiseGlow}` : "none", fontFamily: "var(--font-primary)", minWidth: 80 }}>
               {step === totalSteps - 1 ? "Submit Order →" : "Continue →"}
             </button>
           )}
@@ -2579,7 +2613,7 @@ function StationeryKitForm({ onBackToPortal }) {
 // ===========================================================
 //  EMPLOYEE HEADSHOTS FORM
 // ===========================================================
-function EmployeeHeadshotsForm({ onBackToPortal }) {
+function EmployeeHeadshotsForm({ onBackToPortal, onHome }) {
   // ── Local constants ──
   const C = FC;
 
@@ -2655,7 +2689,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 
   // ── Local styles ──
   const HS = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     progressWrap: { position: "fixed", top: 0, left: 0, right: 0, padding: "16px 24px 12px", zIndex: 10, background: `linear-gradient(180deg, ${C.dark}ee, transparent)` },
@@ -2663,11 +2697,11 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
     progressBar: { height: "100%", background: `linear-gradient(90deg, ${C.turquoise}, ${C.turquoiseLight})`, borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 0 12px ${C.turquoiseGlow}` },
     content: { width: "100%", maxWidth: 480, zIndex: 2 },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -2675,11 +2709,10 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
   if (submitted) {
     return (
       <div style={HS.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
         <div style={HS.bgOrb1} /><div style={HS.bgOrb2} />
         <div style={HS.successWrap}>
           <div style={{ fontSize: 64, marginBottom: 24 }}>📸</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>You're All Set!</h2>
+          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>You're All Set!</h2>
           <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
             Your headshot request has been submitted.<br />Now pick a time that works for you.
           </p>
@@ -2710,7 +2743,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
               display: "inline-block", padding: "16px 36px", marginBottom: 20,
               background: `linear-gradient(135deg, ${C.turquoise}, ${C.green})`,
               color: "#fff", border: "none", borderRadius: 12, fontSize: 16, fontWeight: 700,
-              textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
+              textDecoration: "none", fontFamily: "var(--font-primary)",
               boxShadow: `0 8px 32px ${C.turquoiseGlow}`, transition: "transform 0.2s",
             }}>
             📅 Schedule Your Session
@@ -2730,7 +2763,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
       case 0: return (
         <div style={HS.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>📸</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Employee Headshots</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>Employee Headshots</h1>
           <p style={{ fontSize: 17, color: C.turquoiseLight, marginBottom: 4, fontWeight: 500 }}>Professional Photo Session</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 8px" }}>
             Get a professional headshot for your employee profile,<br />business card, and tribal communications.
@@ -2817,7 +2850,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
             <textarea value={form.notes} onChange={(e) => u("notes", e.target.value)}
               placeholder="e.g. I'd like to match my colleague's background, I have glasses and want to avoid glare, etc."
               rows={4}
-              style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "'DM Sans', sans-serif", resize: "vertical", outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "14px 16px", background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10, color: C.textPrimary, fontSize: 15, fontFamily: "var(--font-primary)", resize: "vertical", outline: "none", boxSizing: "border-box" }}
             />
           </div>
           <div style={HS.navRow}>
@@ -2868,7 +2901,6 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 
   return (
     <div style={HS.container}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={HS.bgOrb1} /><div style={HS.bgOrb2} />
       {step > 0 && (
         <div style={HS.progressWrap}>
@@ -2879,9 +2911,10 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
           <div style={HS.progressTrack}><div style={{ ...HS.progressBar, width: `${progress}%` }} /></div>
         </div>
       )}
-      <div style={{ ...HS.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...HS.content, paddingBottom: 80, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
         {renderStep()}
       </div>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "center", padding: "12px 0 20px" }}><HomeButton onClick={onHome} /></div>
     </div>
   );
 }
@@ -2889,7 +2922,7 @@ function EmployeeHeadshotsForm({ onBackToPortal }) {
 // ===========================================================
 //  INSTANT ALERT FORM
 // ===========================================================
-function InstantAlertForm({ onBackToPortal }) {
+function InstantAlertForm({ onBackToPortal, onHome }) {
   // ── Local constants ──
   const C = FC;
 
@@ -2970,7 +3003,7 @@ function InstantAlertForm({ onBackToPortal }) {
 
   // ── Local styles ──
   const IA = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.red}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -2979,11 +3012,11 @@ function InstantAlertForm({ onBackToPortal }) {
     progressBar: { height: "100%", borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)" },
     content: { width: "100%", maxWidth: 480, zIndex: 2 },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -2991,11 +3024,10 @@ function InstantAlertForm({ onBackToPortal }) {
   if (submitted) {
     return (
       <div style={IA.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
         <div style={IA.bgOrb1} /><div style={IA.bgOrb2} />
         <div style={IA.successWrap}>
           <div style={{ fontSize: 64, marginBottom: 24 }}>{urgencyObj?.icon || "⚡"}</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>Alert Submitted</h2>
+          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>Alert Submitted</h2>
           <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
             Your {urgencyObj?.label.toLowerCase()} alert has been routed<br />to Communications for immediate action.
           </p>
@@ -3031,7 +3063,7 @@ function InstantAlertForm({ onBackToPortal }) {
       case 0: return (
         <div style={IA.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>⚡</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Instant Alert</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>Instant Alert</h1>
           <p style={{ fontSize: 17, color: C.redLight, marginBottom: 4, fontWeight: 500 }}>Urgent Communications</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 32px" }}>
             Need to get an urgent message out fast?<br />Closures, emergencies, time-sensitive announcements —<br />this is the fast lane.
@@ -3163,7 +3195,6 @@ function InstantAlertForm({ onBackToPortal }) {
 
   return (
     <div style={IA.container}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={IA.bgOrb1} /><div style={IA.bgOrb2} /><div style={IA.bgOrb3} />
       {step > 0 && (
         <div style={IA.progressWrap}>
@@ -3174,9 +3205,10 @@ function InstantAlertForm({ onBackToPortal }) {
           <div style={IA.progressTrack}><div style={{ ...IA.progressBar, width: `${progress}%`, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}cc)` }} /></div>
         </div>
       )}
-      <div style={{ ...IA.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...IA.content, paddingBottom: 80, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
         {renderStep()}
       </div>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "center", padding: "12px 0 20px" }}><HomeButton onClick={onHome} /></div>
     </div>
   );
 }
@@ -3184,7 +3216,7 @@ function InstantAlertForm({ onBackToPortal }) {
 // ===========================================================
 //  TURTLE PRESS — SUB-MENU + QTP FEEDBACK FORM
 // ===========================================================
-function TurtlePressForm({ onBackToPortal }) {
+function TurtlePressForm({ onBackToPortal, onHome }) {
   const [subView, setSubView] = useState("menu"); // "menu" | "submission" | "article" | "feedback"
 
   const C = FC;
@@ -3198,14 +3230,13 @@ function TurtlePressForm({ onBackToPortal }) {
     ];
 
     return (
-      <div style={{ minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+      <div style={{ minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
         <div style={{ position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}08, transparent 70%)`, pointerEvents: "none" }} />
         <div style={{ position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" }} />
 
         <div style={{ zIndex: 2, textAlign: "center", maxWidth: 480, width: "100%" }}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>🐢</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>The Turtle Press</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>The Turtle Press</h1>
           <p style={{ fontSize: 15, color: C.goldLight, marginBottom: 4, fontWeight: 500 }}>Quarterly Newsletter</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 32px" }}>
             What would you like to do?
@@ -3224,30 +3255,31 @@ function TurtlePressForm({ onBackToPortal }) {
             ))}
           </div>
         </div>
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "center", padding: "12px 0 20px" }}><HomeButton onClick={onHome} /></div>
       </div>
     );
   }
 
   // ─── SUBMISSION FORM ──────────────────
   if (subView === "submission") {
-    return <QTPSubmissionSubForm onBack={() => setSubView("menu")} />;
+    return <QTPSubmissionSubForm onBack={() => setSubView("menu")} onHome={onHome} />;
   }
 
   // ─── ARTICLE / STORY FORM ─────────────
   if (subView === "article") {
-    return <QTPArticleSubForm onBack={() => setSubView("menu")} />;
+    return <QTPArticleSubForm onBack={() => setSubView("menu")} onHome={onHome} />;
   }
 
   // ─── QTP FEEDBACK FORM ───────────────────
   if (subView === "feedback") {
-    return <QTPFeedbackSubForm onBack={() => setSubView("menu")} />;
+    return <QTPFeedbackSubForm onBack={() => setSubView("menu")} onHome={onHome} />;
   }
 
   return null;
 }
 
 // ── QTP FEEDBACK SUB-FORM ──────────────────
-function QTPFeedbackSubForm({ onBack }) {
+function QTPFeedbackSubForm({ onBack, onHome }) {
   const C = FC;
 
   const FEEDBACK_TYPES = [
@@ -3294,7 +3326,7 @@ function QTPFeedbackSubForm({ onBack }) {
   const progress = step > 0 ? Math.min((step / 7) * 100, 100) : 0;
 
   const FB = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -3303,11 +3335,11 @@ function QTPFeedbackSubForm({ onBack }) {
     progressBar: { height: "100%", background: `linear-gradient(90deg, ${C.gold}, ${C.goldLight})`, borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 0 12px rgba(201,168,76,0.3)` },
     content: { width: "100%", maxWidth: 480, zIndex: 2 },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -3316,11 +3348,10 @@ function QTPFeedbackSubForm({ onBack }) {
     const ft = FEEDBACK_TYPES.find((x) => x.id === form.feedbackType);
     return (
       <div style={FB.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
         <div style={FB.bgOrb1} /><div style={FB.bgOrb2} />
         <div style={FB.successWrap}>
           <div style={{ fontSize: 64, marginBottom: 24 }}>🐢</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>Miigwech!</h2>
+          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>Miigwech!</h2>
           <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
             Your feedback has been received.<br />We appreciate you helping us improve the Turtle Press.
           </p>
@@ -3358,7 +3389,7 @@ function QTPFeedbackSubForm({ onBack }) {
       case 0: return (
         <div style={FB.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>🐢</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Turtle Press</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>Turtle Press</h1>
           <p style={{ fontSize: 17, color: C.goldLight, marginBottom: 4, fontWeight: 500 }}>Feedback & Corrections</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 32px" }}>
             Spot a typo? Have a suggestion? Want to say something nice?<br />Your feedback helps us make the Turtle Press better for everyone.
@@ -3518,7 +3549,6 @@ function QTPFeedbackSubForm({ onBack }) {
 
   return (
     <div style={FB.container}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={FB.bgOrb1} /><div style={FB.bgOrb2} /><div style={FB.bgOrb3} />
       {step > 0 && (
         <div style={FB.progressWrap}>
@@ -3529,9 +3559,10 @@ function QTPFeedbackSubForm({ onBack }) {
           <div style={FB.progressTrack}><div style={{ ...FB.progressBar, width: `${progress}%` }} /></div>
         </div>
       )}
-      <div style={{ ...FB.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...FB.content, paddingBottom: 80, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
         {renderStep()}
       </div>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "center", padding: "12px 0 20px" }}><HomeButton onClick={onHome} /></div>
     </div>
   );
 }
@@ -3539,7 +3570,7 @@ function QTPFeedbackSubForm({ onBack }) {
 // ===========================================================
 //  QTP SUBMISSION SUB-FORM (Celebrations & Photos)
 // ===========================================================
-function QTPSubmissionSubForm({ onBack }) {
+function QTPSubmissionSubForm({ onBack, onHome }) {
   const C = FC;
 
   const SUBMISSION_TYPES = [
@@ -3592,7 +3623,7 @@ function QTPSubmissionSubForm({ onBack }) {
   const progress = Math.min((step / 8) * 100, 100);
 
   const SM = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -3601,11 +3632,11 @@ function QTPSubmissionSubForm({ onBack }) {
     progressBar: { height: "100%", background: `linear-gradient(90deg, ${C.turquoise}, ${C.turquoiseLight})`, borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 0 12px ${C.turquoiseGlow}` },
     content: { width: "100%", maxWidth: 480, zIndex: 2 },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -3614,11 +3645,10 @@ function QTPSubmissionSubForm({ onBack }) {
     const t = SUBMISSION_TYPES.find((x) => x.id === form.submissionType);
     return (
       <div style={SM.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
         <div style={SM.bgOrb1} /><div style={SM.bgOrb2} />
         <div style={SM.successWrap}>
           <div style={{ fontSize: 64, marginBottom: 24 }}>🐢</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>Miigwech!</h2>
+          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>Miigwech!</h2>
           <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
             Your {t?.label.toLowerCase()} submission has been received.<br />Our team will review it for the next Turtle Press edition.
           </p>
@@ -3656,7 +3686,7 @@ function QTPSubmissionSubForm({ onBack }) {
       case 0: return (
         <div style={SM.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>🐢</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Turtle Press</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>Turtle Press</h1>
           <p style={{ fontSize: 17, color: C.turquoiseLight, marginBottom: 4, fontWeight: 500 }}>Submission Form</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 8px" }}>
             Share birthdays, celebrations, announcements, and photos<br />with your community through the Turtle Press.
@@ -3912,7 +3942,6 @@ function QTPSubmissionSubForm({ onBack }) {
 
   return (
     <div style={SM.container}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={SM.bgOrb1} /><div style={SM.bgOrb2} /><div style={SM.bgOrb3} />
       {step > 0 && (
         <div style={SM.progressWrap}>
@@ -3923,9 +3952,10 @@ function QTPSubmissionSubForm({ onBack }) {
           <div style={SM.progressTrack}><div style={{ ...SM.progressBar, width: `${progress}%` }} /></div>
         </div>
       )}
-      <div style={{ ...SM.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...SM.content, paddingBottom: 80, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
         {renderStep()}
       </div>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "center", padding: "12px 0 20px" }}><HomeButton onClick={onHome} /></div>
     </div>
   );
 }
@@ -3933,7 +3963,7 @@ function QTPSubmissionSubForm({ onBack }) {
 // ===========================================================
 //  QTP ARTICLE / STORY SUB-FORM
 // ===========================================================
-function QTPArticleSubForm({ onBack }) {
+function QTPArticleSubForm({ onBack, onHome }) {
   const C = FC;
 
   const AR_DEPTS = [
@@ -4032,7 +4062,7 @@ function QTPArticleSubForm({ onBack }) {
   const progress = step > 0 ? Math.min((step / maxStep) * 100, 100) : 0;
 
   const AR = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -4041,11 +4071,11 @@ function QTPArticleSubForm({ onBack }) {
     progressBar: { height: "100%", background: `linear-gradient(90deg, ${C.turquoise}, ${C.turquoiseLight})`, borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 0 12px ${C.turquoiseGlow}` },
     content: { width: "100%", maxWidth: 480, zIndex: 2 },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -4054,11 +4084,10 @@ function QTPArticleSubForm({ onBack }) {
     const fmt = SUBMISSION_FORMATS.find((x) => x.id === form.submissionFormat);
     return (
       <div style={AR.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
         <div style={AR.bgOrb1} /><div style={AR.bgOrb2} />
         <div style={AR.successWrap}>
           <div style={{ fontSize: 64, marginBottom: 24 }}>📰</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>Miigwech!</h2>
+          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>Miigwech!</h2>
           <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
             Your article submission has been received and routed<br />to the Communications Hub for review.
           </p>
@@ -4095,7 +4124,7 @@ function QTPArticleSubForm({ onBack }) {
       case 0: return (
         <div style={AR.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>📰</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Article & Story</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>Article & Story</h1>
           <p style={{ fontSize: 17, color: C.turquoiseLight, marginBottom: 4, fontWeight: 500 }}>Submission Form</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 400, margin: "16px auto 8px" }}>
             Submit articles, story leads, and news tips for the<br />Quarterly Turtle Press. Share what's happening in our<br />community and beyond.
@@ -4338,7 +4367,6 @@ function QTPArticleSubForm({ onBack }) {
 
   return (
     <div style={AR.container}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={AR.bgOrb1} /><div style={AR.bgOrb2} /><div style={AR.bgOrb3} />
       {step > 0 && (
         <div style={AR.progressWrap}>
@@ -4349,9 +4377,10 @@ function QTPArticleSubForm({ onBack }) {
           <div style={AR.progressTrack}><div style={{ ...AR.progressBar, width: `${progress}%` }} /></div>
         </div>
       )}
-      <div style={{ ...AR.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...AR.content, paddingBottom: 80, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
         {renderStep()}
       </div>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "center", padding: "12px 0 20px" }}><HomeButton onClick={onHome} /></div>
     </div>
   );
 }
@@ -4359,7 +4388,7 @@ function QTPArticleSubForm({ onBack }) {
 // ===========================================================
 //  GENERAL / OTHER REQUEST FORM
 // ===========================================================
-function GeneralRequestForm({ onBackToPortal }) {
+function GeneralRequestForm({ onBackToPortal, onHome }) {
   const C = FC;
 
   const GR_DEPTS = [
@@ -4433,7 +4462,7 @@ function GeneralRequestForm({ onBackToPortal }) {
 
   // ── Local styles ──
   const GR = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "'DM Sans', sans-serif", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
+    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
     bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
     bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.gold}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
@@ -4442,11 +4471,11 @@ function GeneralRequestForm({ onBackToPortal }) {
     progressBar: { height: "100%", background: `linear-gradient(90deg, ${C.turquoise}, ${C.turquoiseLight})`, borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 0 12px ${C.turquoiseGlow}` },
     content: { width: "100%", maxWidth: 480, zIndex: 2 },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" },
+    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
+    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
     successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
   };
 
@@ -4455,11 +4484,10 @@ function GeneralRequestForm({ onBackToPortal }) {
     const areaObj = REQUEST_AREAS.find(a => a.id === form.area);
     return (
       <div style={GR.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
         <div style={GR.bgOrb1} /><div style={GR.bgOrb2} />
         <div style={GR.successWrap}>
           <div style={{ fontSize: 64, marginBottom: 24 }}>🐢</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>Miigwech!</h2>
+          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>Miigwech!</h2>
           <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>Your request has been received and routed<br />to Communications for review.</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
             {form.area === "design" && <FormBadge name="🎨 Design" color="#00c2e0" />}
@@ -4492,7 +4520,7 @@ function GeneralRequestForm({ onBackToPortal }) {
       case 0: return (
         <div style={GR.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>💡</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>General Request</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>General Request</h1>
           <p style={{ fontSize: 17, color: C.turquoiseLight, marginBottom: 4, fontWeight: 500 }}>Something Else in Mind?</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 32px" }}>
             Don't see what you need in our other services?<br />No problem — tell us what you're looking for and<br />we'll figure out how to help.
@@ -4619,7 +4647,6 @@ function GeneralRequestForm({ onBackToPortal }) {
 
   return (
     <div style={GR.container}>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
       <div style={GR.bgOrb1} /><div style={GR.bgOrb2} /><div style={GR.bgOrb3} />
       {step > 0 && (
         <div style={GR.progressWrap}>
@@ -4630,9 +4657,10 @@ function GeneralRequestForm({ onBackToPortal }) {
           <div style={GR.progressTrack}><div style={{ ...GR.progressBar, width: `${progress}%` }} /></div>
         </div>
       )}
-      <div style={{ ...GR.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+      <div style={{ ...GR.content, paddingBottom: 80, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
         {renderStep()}
       </div>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, display: "flex", justifyContent: "center", padding: "12px 0 20px" }}><HomeButton onClick={onHome} /></div>
     </div>
   );
 }
@@ -4651,8 +4679,11 @@ export default function NHBPPortal() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [ticketNumber, setTicketNumber] = useState(null);
+  const [resumePrompt, setResumePrompt] = useState(null);
   const inputRef = useRef(null);
   const totalSteps = 7;
+
+  useAutoSave("general-portal", formData, step);
 
   useEffect(() => {
     if (inputRef.current && screen === "form") {
@@ -4681,6 +4712,7 @@ export default function NHBPPortal() {
   const handleSubmit = () => {
     setTicketNumber(`NHBP-${String(Math.floor(Math.random() * 9000) + 1000)}`);
     setSubmitted(true);
+    clearFormData("general-portal");
   };
 
   const canAdvance = () => {
@@ -4706,64 +4738,36 @@ export default function NHBPPortal() {
     setFormData({ service: null, name: "", email: "", department: "", title: "", description: "", priority: null });
   };
 
+  const goHome = () => { setScreen("welcome"); setStep(0); };
+
   // ─── ROUTE: VISUAL DESIGNS FORM ─────────────────────────
   if (screen === "visual-designs") {
-    return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <VisualDesignForm onBackToPortal={resetToWelcome} />
-      </div>
-    );
+    return <VisualDesignForm onBackToPortal={resetToWelcome} onHome={goHome} />;
   }
 
   // ─── ROUTE: STATIONERY KIT FORM ─────────────────────
   if (screen === "stationery-kit") {
-    return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <StationeryKitForm onBackToPortal={resetToWelcome} />
-      </div>
-    );
+    return <StationeryKitForm onBackToPortal={resetToWelcome} onHome={goHome} />;
   }
 
   // ─── ROUTE: STUDIO HUB (HEADSHOTS) FORM ────────────
   if (screen === "studio-hub") {
-    return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <EmployeeHeadshotsForm onBackToPortal={resetToWelcome} />
-      </div>
-    );
+    return <EmployeeHeadshotsForm onBackToPortal={resetToWelcome} onHome={goHome} />;
   }
 
   // ─── ROUTE: INSTANT ALERT FORM ─────────────────────
   if (screen === "instant-alert") {
-    return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <InstantAlertForm onBackToPortal={resetToWelcome} />
-      </div>
-    );
+    return <InstantAlertForm onBackToPortal={resetToWelcome} onHome={goHome} />;
   }
 
   // ─── ROUTE: TURTLE PRESS FORM ──────────────────────
   if (screen === "turtle-press") {
-    return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <TurtlePressForm onBackToPortal={resetToWelcome} />
-      </div>
-    );
+    return <TurtlePressForm onBackToPortal={resetToWelcome} onHome={goHome} />;
   }
 
   // ─── ROUTE: GENERAL / OTHER REQUEST FORM ───────────
   if (screen === "general-request") {
-    return (
-      <div style={{ position: "relative" }}>
-        <BackToPortalButton onClick={resetToWelcome} />
-        <GeneralRequestForm onBackToPortal={resetToWelcome} />
-      </div>
-    );
+    return <GeneralRequestForm onBackToPortal={resetToWelcome} onHome={goHome} />;
   }
 
   // ─── WELCOME SCREEN ─────────────────────────────────────
@@ -4831,9 +4835,34 @@ export default function NHBPPortal() {
             Where departments come to create.
           </p>
 
+          {/* Resume prompt */}
+          {resumePrompt && (
+            <div style={{
+              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 16, padding: "20px 28px", marginTop: 32, maxWidth: 360, width: "100%",
+              opacity: 0, animation: "fadeSlide 0.5s ease forwards",
+            }}>
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", margin: "0 0 16px" }}>Continue where you left off?</p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <button onClick={() => {
+                  const saved = loadFormData("general-portal");
+                  if (saved) { setFormData(saved.data); setStep(saved.step); }
+                  setScreen("form"); setResumePrompt(null);
+                }} style={{ padding: "10px 24px", borderRadius: 20, border: `1px solid ${NHBP.turquoise}40`, background: `${NHBP.turquoise}12`, color: NHBP.turquoiseLight, fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-primary)" }}>Yes</button>
+                <button onClick={() => {
+                  clearFormData("general-portal"); setResumePrompt(null); setScreen("form");
+                }} style={{ padding: "10px 24px", borderRadius: 20, border: "1px solid rgba(255,255,255,0.08)", background: "transparent", color: "rgba(255,255,255,0.4)", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-primary)" }}>Start fresh</button>
+              </div>
+            </div>
+          )}
+
           {/* Start a Request CTA */}
           <button
-            onClick={() => setScreen("form")}
+            onClick={() => {
+              const saved = loadFormData("general-portal");
+              if (saved && saved.data && saved.step > 0) { setResumePrompt(true); return; }
+              setScreen("form");
+            }}
             style={{
               padding: "20px 60px", fontSize: 16, fontWeight: 500,
               letterSpacing: "0.06em", color: "rgba(20,169,162,0.8)", minWidth: 300,
@@ -4874,7 +4903,7 @@ export default function NHBPPortal() {
 
           <GlassCard style={{ padding: "14px 32px", marginBottom: 24 }}>
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.15em", display: "block" }}>Request</span>
-            <span style={{ fontSize: 24, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "monospace", letterSpacing: "0.05em" }}>{ticketNumber}</span>
+            <span style={{ fontSize: 24, fontWeight: 600, color: NHBP.turquoiseLight, fontFamily: "var(--font-primary)", letterSpacing: "0.05em" }}>{ticketNumber}</span>
           </GlassCard>
 
           <p style={{ fontSize: 15, color: "rgba(255,255,255,0.45)", lineHeight: 1.8, maxWidth: 400, marginBottom: 28 }}>
@@ -4931,7 +4960,7 @@ export default function NHBPPortal() {
   const inputStyle = {
     width: "100%", maxWidth: 440, margin: "0 auto", background: "transparent",
     border: "none", borderBottom: `2px solid rgba(255,255,255,0.1)`,
-    color: "#f0f0f0", fontSize: 22, fontFamily: "Tahoma, 'Segoe UI', sans-serif",
+    color: "#f0f0f0", fontSize: 22, fontFamily: "var(--font-primary)",
     padding: "14px 0", outline: "none", transition: "border-color 0.3s ease",
     caretColor: NHBP.turquoise, boxSizing: "border-box", textAlign: "left",
   };
@@ -4941,12 +4970,12 @@ export default function NHBPPortal() {
       case 0:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>01 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>01 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px", letterSpacing: "-0.02em" }}>
               What can we help you create?
             </h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Pick the service that best fits your need</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 18, width: "100%", maxWidth: 620, margin: "0 auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 18, width: "100%", maxWidth: 680, margin: "0 auto" }}>
               {SERVICES.map(s => (
                 <GlassCard
                   key={s.id}
@@ -5020,7 +5049,7 @@ export default function NHBPPortal() {
       case 1:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>02 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>02 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>What’s your name?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>So we know who we’re working with</p>
             <input ref={inputRef} type="text" placeholder="Type your full name..." value={formData.name}
@@ -5031,7 +5060,7 @@ export default function NHBPPortal() {
       case 2:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>03 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>03 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>
               Great to have you, <span style={{ color: NHBP.turquoiseLight }}>{formData.name.split(" ")[0]}</span>
               <br />What’s your email?
@@ -5045,7 +5074,7 @@ export default function NHBPPortal() {
       case 3:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>04 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>04 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Which department are you with?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Select your department</p>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 540, justifyContent: "center", margin: "0 auto" }}>
@@ -5060,7 +5089,7 @@ export default function NHBPPortal() {
                       borderRadius: 22, padding: "9px 18px",
                       color: active ? NHBP.turquoiseLight : "rgba(255,255,255,0.5)",
                       fontSize: 13, cursor: "pointer", transition: "all 0.25s ease",
-                      fontFamily: "Tahoma, sans-serif",
+                      fontFamily: "var(--font-primary)",
                       boxShadow: active ? `0 0 16px ${NHBP.turquoise}15` : "none",
                     }}>
                     {d}
@@ -5074,7 +5103,7 @@ export default function NHBPPortal() {
       case 4:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>05 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>05 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Give your project a title</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Something short and descriptive</p>
             <input ref={inputRef} type="text" placeholder='"Spring Pow Wow Flyer" or "Staff Headshots March"'
@@ -5085,7 +5114,7 @@ export default function NHBPPortal() {
       case 5:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>06 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>06 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Tell us about your project</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Purpose, audience, specific ideas — the more detail, the faster we deliver</p>
             <textarea ref={inputRef} placeholder="Describe what you need..."
@@ -5094,7 +5123,7 @@ export default function NHBPPortal() {
                 width: "100%", maxWidth: 520, minHeight: 140, resize: "vertical", margin: "0 auto",
                 background: "rgba(255,255,255,0.02)", backdropFilter: "blur(12px)",
                 border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 14,
-                color: "#f0f0f0", fontSize: 15, fontFamily: "Tahoma, sans-serif",
+                color: "#f0f0f0", fontSize: 15, fontFamily: "var(--font-primary)",
                 padding: "18px", outline: "none", lineHeight: 1.7, caretColor: NHBP.turquoise,
                 boxSizing: "border-box", transition: "border-color 0.3s ease", textAlign: "left",
               }}
@@ -5105,7 +5134,7 @@ export default function NHBPPortal() {
       case 6:
         return (
           <div style={slideStyle}>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>07 / 0{totalSteps}</p>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "var(--font-primary)" }}>07 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>How soon do you need this?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>This helps us prioritize across all departments</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440, margin: "0 auto", width: "100%" }}>
@@ -5161,38 +5190,27 @@ export default function NHBPPortal() {
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: "18px 28px", maxWidth: 680, margin: "0 auto",
         background: "linear-gradient(0deg, rgba(8,9,12,0.95) 50%, transparent)",
-        backdropFilter: "blur(12px)",
       }}>
         <button onClick={goBack} disabled={step === 0}
           style={{
             background: "none", border: "none", color: "rgba(255,255,255,0.35)",
-            fontSize: 13, cursor: step === 0 ? "default" : "pointer", padding: "10px 16px",
-            fontFamily: "Tahoma, sans-serif", opacity: step === 0 ? 0.3 : 1,
+            fontSize: 14, cursor: step === 0 ? "default" : "pointer", padding: "10px 16px",
+            fontFamily: "var(--font-primary)", fontWeight: 400, minWidth: 80, opacity: step === 0 ? 0.3 : 1,
             transition: "all 0.2s ease",
           }}>
           ← Back
         </button>
 
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          {Array.from({ length: totalSteps }).map((_, i) => (
-            <div key={i} style={{
-              height: 6, borderRadius: 3,
-              width: i === step ? 28 : 6,
-              background: i === step ? NHBP.turquoise : i < step ? NHBP.turquoise + "50" : "rgba(255,255,255,0.1)",
-              boxShadow: i === step ? `0 0 8px ${NHBP.turquoiseGlow}` : "none",
-              transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-            }} />
-          ))}
-        </div>
+        <HomeButton onClick={() => { setScreen("welcome"); setStep(0); }} />
 
         <button onClick={goNext} disabled={!canAdvance()}
           style={{
             background: canAdvance() ? `${NHBP.turquoise}15` : "transparent",
             border: `1px solid ${canAdvance() ? NHBP.turquoise + "30" : "rgba(255,255,255,0.05)"}`,
             color: canAdvance() ? NHBP.turquoiseLight : "rgba(255,255,255,0.2)",
-            fontSize: 13, fontWeight: 600, cursor: canAdvance() ? "pointer" : "default",
+            fontSize: 14, fontWeight: 500, cursor: canAdvance() ? "pointer" : "default",
             padding: "10px 20px", borderRadius: 10,
-            fontFamily: "Tahoma, sans-serif", transition: "all 0.3s ease",
+            fontFamily: "var(--font-primary)", minWidth: 80, transition: "all 0.3s ease",
             boxShadow: canAdvance() ? `0 0 16px ${NHBP.turquoise}10` : "none",
           }}>
           {step === totalSteps - 1 ? "Submit ✓" : "Next →"}
