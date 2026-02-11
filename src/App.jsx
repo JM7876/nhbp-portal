@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 const NHBP = {
   turquoise: "#14A9A2",
@@ -1982,11 +1982,6 @@ function VisualDesignForm({ onBackToPortal }) {
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.03)", zIndex: 100 }}>
         <div style={{ height: "100%", borderRadius: "0 1px 1px 0", width: `${((step + 1) / totalSteps) * 100}%`, background: `linear-gradient(90deg, ${NHBP.turquoise}, ${NHBP.turquoiseLight})`, boxShadow: `0 0 12px ${NHBP.turquoiseGlow}`, transition: "width 0.5s cubic-bezier(0.4,0,0.2,1)" }} />
       </div>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 24px", zIndex: 10, position: "relative" }}>
-        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", color: "rgba(255,255,255,0.35)" }}>🐢 NHBP Communications</span>
-        <span style={{ fontSize: 12, color: NHBP.turquoise, fontWeight: 600, letterSpacing: "0.04em" }}>Visual Design Request</span>
-      </div>
       {/* Content */}
       <div style={{ flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 24px 120px", zIndex: 1, position: "relative", overflowY: "auto" }}>
         {renderStep()}
@@ -2552,12 +2547,11 @@ function StationeryKitForm({ onBackToPortal }) {
     <div dir="ltr" style={{ minHeight: "100vh", color: "#f0f0f0", fontFamily: "Tahoma, 'Segoe UI', sans-serif", position: "relative", overflow: "hidden", direction: "ltr" }}>
       <Background />
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", minHeight: "100vh", padding: "0 24px" }}>
-        <div style={{ padding: "20px 0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+        <div style={{ padding: "20px 0 16px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 22 }}>◎</span>
             <span style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.7)" }}>Employee Stationery Kit</span>
           </div>
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", letterSpacing: "0.1em", textTransform: "uppercase" }}>NHBP Communications</div>
         </div>
         <div style={{ padding: "16px 0 0", maxWidth: 620, width: "100%" }}>
           <div style={{ height: 2, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
@@ -4651,7 +4645,6 @@ export default function NHBPPortal() {
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
   const [animating, setAnimating] = useState(false);
-  const [theme, setTheme] = useState("night");
   const [formData, setFormData] = useState({
     service: null, name: "", email: "", department: "",
     title: "", description: "", priority: null,
@@ -4666,14 +4659,6 @@ export default function NHBPPortal() {
       setTimeout(() => inputRef.current?.focus(), 400);
     }
   }, [step, screen]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme(t => {
-      const next = t === "night" ? "day" : "night";
-      document.documentElement.setAttribute("data-theme", next);
-      return next;
-    });
-  }, []);
 
   const goNext = () => {
     if (animating) return;
@@ -4787,78 +4772,79 @@ export default function NHBPPortal() {
       <div style={{ minHeight: "100vh", color: "var(--text-primary)", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         <PortalBackground />
 
-        {/* Nav bar — day/night toggle only */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 10, padding: "16px 20px", display: "flex", alignItems: "center" }}>
-          <button
-            onClick={toggleTheme}
-            className="glass-full glass-interactive"
-            style={{
-              width: 28, height: 28, borderRadius: "50%",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", fontSize: 14, lineHeight: 1,
-              padding: 0,
-            }}
-          >
-            {theme === "night" ? "☀️" : "🌙"}
-          </button>
-        </div>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center", position: "relative", zIndex: 1 }}>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 24px", textAlign: "center", position: "relative", zIndex: 1, animation: "slideUp 0.8s ease" }}>
-
-          {/* Turtle icon — 56px glass rounded square */}
+          {/* Turtle icon — 84px glass rounded square with glow */}
           <div className="glass-full" style={{
-            width: 56, height: 56, borderRadius: 16,
+            width: 84, height: 84, borderRadius: 20,
             display: "flex", alignItems: "center", justifyContent: "center",
             marginBottom: 28,
+            boxShadow: `0 0 40px ${NHBP.turquoiseGlow}, 0 8px 32px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)`,
+            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
+            animationDelay: "0.1s",
           }}>
-            <span style={{ fontSize: 28, filter: "drop-shadow(0 0 6px rgba(20, 169, 162, 0.4))" }}>🐢</span>
+            <span style={{ fontSize: 40, filter: "drop-shadow(0 0 10px rgba(20, 169, 162, 0.5))" }}>🐢</span>
           </div>
 
-          {/* Title — clean text, no gradient */}
+          {/* Title — large, thin, commanding */}
           <h1 style={{
-            fontSize: "var(--text-hero)", fontWeight: "var(--weight-light)", margin: 0,
-            color: "var(--text-primary)", letterSpacing: "-0.01em", lineHeight: 1.2,
+            fontSize: 44, fontWeight: 200, margin: 0,
+            color: "var(--text-primary)", letterSpacing: "0.05em", lineHeight: 1.2,
+            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
+            animationDelay: "0.25s",
           }}>
             NHBP Communications
           </h1>
 
           {/* Subtitle */}
           <p style={{
-            fontSize: "var(--text-subtitle)", color: "var(--text-accent-bright)",
-            fontWeight: "var(--weight-regular)", margin: "10px 0 0",
-            letterSpacing: "0.3em", textTransform: "uppercase",
+            fontSize: 14, color: "var(--text-accent-bright)",
+            fontWeight: "var(--weight-regular)", margin: "20px 0 0",
+            letterSpacing: "0.4em", textTransform: "uppercase",
+            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
+            animationDelay: "0.4s",
           }}>
             Request Portal
           </p>
 
           {/* Decorative divider */}
           <div style={{
-            width: 60, height: 1, margin: "24px 0",
+            width: 60, height: 1, margin: "28px 0",
             background: `linear-gradient(90deg, transparent, ${NHBP.turquoise}, transparent)`,
+            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
+            animationDelay: "0.4s",
           }} />
 
           {/* Tagline */}
           <p style={{
-            fontSize: 11, fontWeight: "var(--weight-light)",
+            fontSize: 14, fontWeight: "var(--weight-light)",
             color: "var(--text-secondary)", margin: "0 0 36px",
             lineHeight: 1.6,
+            opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
+            animationDelay: "0.55s",
           }}>
             Where departments come to create.
           </p>
 
-          {/* Start a Request CTA — DO NOT MODIFY */}
-          <GlassCard
+          {/* Start a Request CTA */}
+          <button
             onClick={() => setScreen("form")}
-            style={{ padding: "16px 44px", cursor: "pointer" }}
+            style={{
+              padding: "16px 44px", borderRadius: 28, cursor: "pointer",
+              backdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
+              border: "1px solid rgba(20,169,162,0.2)",
+              background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+              fontSize: 14, fontWeight: 500, letterSpacing: "0.06em",
+              color: "rgba(20,169,162,0.8)",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
+              fontFamily: "var(--font-primary)",
+              opacity: 0, animation: "welcomeFadeIn 0.7s ease forwards",
+              animationDelay: "0.7s",
+            }}
           >
-            <span style={{
-              fontSize: 16, fontWeight: 600, letterSpacing: "0.04em",
-              background: `linear-gradient(135deg, ${NHBP.turquoiseLight}, #fff)`,
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            }}>
-              Start a Request →
-            </span>
-          </GlassCard>
+            Start a Request →
+          </button>
 
         </div>
       </div>
@@ -4931,18 +4917,18 @@ export default function NHBPPortal() {
 
   // ─── FORM STEPS ─────────────────────────────────────────
   const slideStyle = {
-    width: "100%", maxWidth: 620,
+    width: "100%", maxWidth: 620, textAlign: "center",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     opacity: animating ? 0 : 1,
     transform: animating ? `translateY(${direction * 24}px)` : "translateY(0)",
   };
 
   const inputStyle = {
-    width: "100%", maxWidth: 440, background: "transparent",
+    width: "100%", maxWidth: 440, margin: "0 auto", background: "transparent",
     border: "none", borderBottom: `2px solid rgba(255,255,255,0.1)`,
     color: "#f0f0f0", fontSize: 22, fontFamily: "Tahoma, 'Segoe UI', sans-serif",
     padding: "14px 0", outline: "none", transition: "border-color 0.3s ease",
-    caretColor: NHBP.turquoise, boxSizing: "border-box",
+    caretColor: NHBP.turquoise, boxSizing: "border-box", textAlign: "left",
   };
 
   const renderStep = () => {
@@ -4955,7 +4941,7 @@ export default function NHBPPortal() {
               What can we help you create?
             </h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 32px" }}>Pick the service that best fits your need</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(170px, 1fr))", gap: 18, width: "100%", maxWidth: 620, margin: "0 auto" }}>
               {SERVICES.map(s => (
                 <GlassCard
                   key={s.id}
@@ -4992,6 +4978,7 @@ export default function NHBPPortal() {
                   }}
                   style={{
                     padding: "22px 18px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8,
+                    textAlign: "left",
                     opacity: s.status === "coming" ? 0.45 : 1,
                     cursor: s.status === "coming" ? "default" : "pointer",
                   }}
@@ -5056,7 +5043,7 @@ export default function NHBPPortal() {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>04 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>Which department are you with?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>Select your department</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 540 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, maxWidth: 540, justifyContent: "center", margin: "0 auto" }}>
               {DEPARTMENTS.map(d => {
                 const active = formData.department === d;
                 return (
@@ -5099,12 +5086,12 @@ export default function NHBPPortal() {
             <textarea ref={inputRef} placeholder="Describe what you need..."
               value={formData.description} onChange={e => setFormData(d => ({ ...d, description: e.target.value }))}
               style={{
-                width: "100%", maxWidth: 520, minHeight: 140, resize: "vertical",
+                width: "100%", maxWidth: 520, minHeight: 140, resize: "vertical", margin: "0 auto",
                 background: "rgba(255,255,255,0.02)", backdropFilter: "blur(12px)",
                 border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 14,
                 color: "#f0f0f0", fontSize: 15, fontFamily: "Tahoma, sans-serif",
                 padding: "18px", outline: "none", lineHeight: 1.7, caretColor: NHBP.turquoise,
-                boxSizing: "border-box", transition: "border-color 0.3s ease",
+                boxSizing: "border-box", transition: "border-color 0.3s ease", textAlign: "left",
               }}
               rows={5} />
           </div>
@@ -5116,12 +5103,12 @@ export default function NHBPPortal() {
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", letterSpacing: "0.2em", marginBottom: 14, fontFamily: "monospace" }}>07 / 0{totalSteps}</p>
             <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 300, lineHeight: 1.25, margin: "0 0 8px" }}>How soon do you need this?</h2>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", margin: "0 0 28px" }}>This helps us prioritize across all departments</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 440, margin: "0 auto", width: "100%" }}>
               {PRIORITIES.map(p => {
                 const active = formData.priority === p.id;
                 return (
                   <GlassCard key={p.id} active={active} onClick={() => setFormData(d => ({ ...d, priority: p.id }))}
-                    style={{ padding: "18px 22px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer",
+                    style={{ padding: "18px 22px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", textAlign: "left",
                       borderColor: active ? p.color + "50" : undefined,
                       boxShadow: active ? `0 0 24px ${p.color}20` : undefined,
                     }}>
@@ -5160,22 +5147,14 @@ export default function NHBPPortal() {
         }} />
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 28px", position: "relative", zIndex: 10 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", color: "rgba(255,255,255,0.4)" }}>
-          🐢 NHBP Communications
-        </span>
-        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>
-          {formData.service && `${SERVICES.find(s => s.id === formData.service)?.icon} ${SERVICES.find(s => s.id === formData.service)?.label}`}
-        </span>
-      </div>
-
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px 28px 100px", position: "relative", zIndex: 1 }}>
         {renderStep()}
       </div>
 
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-        display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 28px",
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "18px 28px", maxWidth: 680, margin: "0 auto",
         background: "linear-gradient(0deg, rgba(8,9,12,0.95) 50%, transparent)",
         backdropFilter: "blur(12px)",
       }}>
