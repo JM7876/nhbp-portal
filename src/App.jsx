@@ -5,7 +5,8 @@ import ServiceGrid from "./components/services/ServiceGrid";
 import VisualDesignForm from "./components/forms/VisualDesignForm";
 import StationeryKitForm from "./components/forms/StationeryKitForm";
 import EmployeeHeadshotsForm from "./components/forms/StudioHubForm";
-import InstantAlertForm from "./components/forms/InstantAlertForm";
+import CommunityOutreachForm from "./components/forms/CommunityOutreachForm";
+import DIYFormBuilder from "./components/forms/DIYFormBuilder";
 import TurtlePressForm from "./components/forms/TurtlePressForm";
 import GeneralRequestForm from "./components/forms/GeneralRequestForm";
 
@@ -24,7 +25,8 @@ export default function NHBPPortal() {
       "visual": "visual-designs",
       "stationery": "stationery-kit",
       "studio": "studio-hub",
-      "instant-alert": "instant-alert",
+      "community-outreach": "community-outreach",
+      "diy-builder": "diy-builder",
       "turtle-press": "turtle-press",
       "other": "general-request",
     };
@@ -60,11 +62,20 @@ export default function NHBPPortal() {
     );
   }
 
-  // ─── ROUTE: INSTANT ALERT FORM ─────────────────────
-  if (screen === "instant-alert") {
+  // ─── ROUTE: COMMUNITY OUTREACH FORM ────────────────
+  if (screen === "community-outreach") {
     return (
       <ErrorBoundary onReturnToServices={resetToWelcome}>
-        <InstantAlertForm onReturnToServices={resetToWelcome} />
+        <CommunityOutreachForm onReturnToServices={resetToWelcome} />
+      </ErrorBoundary>
+    );
+  }
+
+  // ─── ROUTE: DIY POST BUILDER FORM ────────────────
+  if (screen === "diy-builder") {
+    return (
+      <ErrorBoundary onReturnToServices={resetToWelcome}>
+        <DIYFormBuilder onReturnToServices={resetToWelcome} />
       </ErrorBoundary>
     );
   }
