@@ -35,7 +35,7 @@ export const FC = {
 
 // ─── Typography ──────────────────────────────────────────
 export const FONTS = {
-  primary: "'Raleway', sans-serif",
+  primary: "'Josefin Sans', sans-serif",
   sizes: {
     hero: "clamp(48px, 6vw, 72px)",
     subtitle: "22px",
@@ -88,7 +88,37 @@ export const SPACING = {
 
 // ─── Click Transitions (turquoise → pink) ────────────────
 export const TRANSITIONS = {
-  clickBorder: "rgba(200,80,130,0.25)",
-  clickGlow: "0 0 20px rgba(200,80,130,0.1)",
+  clickBorder: "rgba(200,80,130,0.45)",
+  clickGlow: "0 0 30px rgba(200,80,130,0.25)",
+  innerGlow: "inset 0 0 20px rgba(200,80,130,0.08)",
   duration: "0.3s ease",
+};
+
+// ─── Button Presets ─────────────────────────────────────
+export const BUTTONS = {
+  glassPill: {
+    padding: "20px 60px",
+    borderRadius: 28,
+    backdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
+    WebkitBackdropFilter: "blur(20px) saturate(1.4) brightness(1.1)",
+    background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
+    fontSize: 16,
+    fontWeight: 500,
+    letterSpacing: "0.06em",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
+    cursor: "pointer",
+    transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+  },
+  welcomeColor: {
+    border: "1px solid rgba(20,169,162,0.2)",
+    color: "rgba(20,169,162,0.8)",
+  },
+  submitColor: {
+    border: "1px solid rgba(138,58,77,0.3)",
+    color: "rgba(138,58,77,0.9)",
+  },
+  hoverEffect: {
+    borderColor: "rgba(200,80,130,0.4)",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05), 0 0 25px rgba(200,80,130,0.18)",
+  },
 };
