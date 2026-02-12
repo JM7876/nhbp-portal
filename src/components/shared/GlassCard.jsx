@@ -24,7 +24,7 @@ const GlassCard = ({ children, active, onClick, style, hoverGlow }) => {
           : hovered
           ? GLASS.boxShadowHover
           : GLASS.boxShadow,
-        transform: hovered && onClick ? "translateY(-2px)" : "translateY(0)",
+        transform: hovered && onClick ? "translateY(-1px)" : "translateY(0)",
         position: "relative",
         overflow: "hidden",
         ...style,

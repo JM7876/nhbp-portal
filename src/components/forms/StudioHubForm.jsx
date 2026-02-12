@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { NHBP, FC } from "../../theme";
+import { NHBP, FC, TRANSITIONS } from "../../theme";
 import { DEPARTMENTS } from "../../constants/departments";
 import GlassCard from "../shared/GlassCard";
 import FormGlassCard from "../shared/FormGlassCard";
@@ -91,15 +91,13 @@ function EmployeeHeadshotsForm({ onReturnToServices }) {
 
   // ── Local styles ──
   const HS = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
-    bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
-    bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
+    container: { minHeight: "100vh", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
     progressWrap: { position: "fixed", top: 0, left: 0, right: 0, padding: "16px 24px 12px", zIndex: 10, background: `linear-gradient(180deg, ${C.dark}ee, transparent)` },
     progressTrack: { height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" },
     progressBar: { height: "100%", background: `linear-gradient(90deg, ${C.turquoise}, ${C.turquoiseLight})`, borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 0 12px ${C.turquoiseGlow}` },
     content: { width: "100%", maxWidth: 480, zIndex: 2 },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
     navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
     btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
@@ -111,11 +109,10 @@ function EmployeeHeadshotsForm({ onReturnToServices }) {
   if (submitted) {
     return (
       <div style={HS.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
-        <div style={HS.bgOrb1} /><div style={HS.bgOrb2} />
+        <PortalBackground />
         <div style={HS.successWrap}>
           <div style={{ fontSize: 64, marginBottom: 24 }}>📸</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>You're All Set!</h2>
+          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>You're All Set!</h2>
           <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
             Your headshot request has been submitted.<br />Now pick a time that works for you.
           </p>
@@ -166,7 +163,7 @@ function EmployeeHeadshotsForm({ onReturnToServices }) {
       case 0: return (
         <div style={HS.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>📸</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Employee Headshots</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>Employee Headshots</h1>
           <p style={{ fontSize: 17, color: C.turquoiseLight, marginBottom: 4, fontWeight: 500 }}>Professional Photo Session</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 8px" }}>
             Get a professional headshot for your employee profile,<br />business card, and tribal communications.
@@ -305,8 +302,7 @@ function EmployeeHeadshotsForm({ onReturnToServices }) {
   return (
     <div style={HS.container}>
       {autoSave.showRestore && <RestorePrompt onYes={autoSave.restore} onNo={autoSave.dismiss} />}
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
-      <div style={HS.bgOrb1} /><div style={HS.bgOrb2} />
+      <PortalBackground />
       {step > 0 && (
         <div style={HS.progressWrap}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -332,10 +328,10 @@ function EmployeeHeadshotsForm({ onReturnToServices }) {
             boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
             transition: "border-color 0.3s ease, box-shadow 0.3s ease",
           }}
-          onMouseDown={e => { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; }}
+          onMouseDown={e => { e.currentTarget.style.borderColor = TRANSITIONS.clickBorder; }}
           onMouseUp={e => { e.currentTarget.style.borderColor = "rgba(20,169,162,0.15)"; }}
         >🐢</button>
-        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>Home</span>
+        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>Services</span>
       </div>
     </div>
   );

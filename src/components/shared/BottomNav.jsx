@@ -39,7 +39,7 @@ const BottomFormNav = React.memo(({ onBack, onNext, onHome, canGoBack, canGoNext
       >
         🐢
       </button>
-      <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-primary)", letterSpacing: "0.1em" }}>Home</span>
+      <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-primary)", letterSpacing: "0.1em" }}>Services</span>
     </div>
 
     {/* Next */}
