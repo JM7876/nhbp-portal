@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FC } from "../../theme";
+import { NHBP, FC } from "../../theme";
 import FormGlassCard from "../shared/FormGlassCard";
 import FormInput from "../shared/FormInput";
 import { FormDeptSelect } from "../shared/FormSelect";
 import FormBadge from "../shared/FormBadge";
+import { BottomFormNav } from "../shared/BottomNav";
 import RestorePrompt from "../shared/RestorePrompt";
+import PortalBackground from "../shared/PortalBackground";
 import { useAutoSave } from "../../utils/autoSave";
-import { validateEmail } from "../../utils/validation";
 
 function DIYFormBuilder({ onReturnToServices }) {
   const C = FC;
@@ -72,55 +73,73 @@ function DIYFormBuilder({ onReturnToServices }) {
   const progress = step > 0 ? Math.min((step / 4) * 100, 100) : 0;
   const accentColor = C.maroonLight;
 
-  // ── Local styles ──
+  // ── Navigation ──
+  const navBack = () => { if (step > 0) goTo(step - 1); };
+  const navNext = () => { if (step === 4) handleSubmit(); else goTo(step + 1); };
+
+  const canAdvance = () => {
+    switch (step) {
+      case 0: return true;
+      case 1: return !!(form.firstName && form.lastName && form.department);
+      case 2: return !!form.platform;
+      case 3: return !!form.caption;
+      case 4: return true;
+      default: return true;
+    }
+  };
+
+  const nextLabel =
+    step === 3 ? "Review →" :
+    step === 4 ? "✏️ Submit" :
+    undefined;
+
+  // ── Styles ──
+  const containerStyle = { minHeight: "100vh", color: "var(--text-primary)", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" };
   const D = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
-    bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroonLight}08, transparent 70%)`, pointerEvents: "none" },
-    bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}06, transparent 70%)`, pointerEvents: "none" },
-    bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroonLight}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
     progressWrap: { position: "fixed", top: 0, left: 0, right: 0, padding: "16px 24px 12px", zIndex: 10, background: `linear-gradient(180deg, ${C.dark}ee, transparent)` },
     progressTrack: { height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" },
-    progressBar: { height: "100%", background: `linear-gradient(90deg, ${C.maroonLight}, ${C.turquoise})`, borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: `0 0 12px rgba(138, 58, 77, 0.3)` },
-    content: { width: "100%", maxWidth: 480, zIndex: 2 },
+    progressBar: { height: "100%", background: `linear-gradient(90deg, ${C.maroonLight}, ${C.turquoise})`, borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "0 0 12px rgba(138, 58, 77, 0.3)" },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
-    navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.maroonLight, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px rgba(138, 58, 77, 0.3)` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
-    successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
+    successWrap: { textAlign: "center", maxWidth: 440 },
   };
 
   // ── SUBMITTED ──
   if (submitted) {
     const platformObj = PLATFORM_OPTIONS.find(p => p.id === form.platform);
     return (
-      <div style={D.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
-        <div style={D.bgOrb1} /><div style={D.bgOrb2} />
-        <div style={D.successWrap}>
-          <div style={{ fontSize: 64, marginBottom: 24 }}>✏️</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>Draft Submitted</h2>
-          <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
-            Your post draft has been sent to Communications<br />for review. We'll polish it up and publish!
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            <FormBadge name={`${platformObj?.icon} ${platformObj?.label}`} color={C.maroonLight} />
+      <div style={containerStyle}>
+        <PortalBackground />
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px", zIndex: 1 }}>
+          <div style={D.successWrap}>
+            <div style={{ fontSize: 64, marginBottom: 24 }}>✏️</div>
+            <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>Draft Submitted</h2>
+            <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
+              Your post draft has been sent to Communications<br />for review. We'll polish it up and publish!
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
+              <FormBadge name={`${platformObj?.icon} ${platformObj?.label}`} color={C.maroonLight} />
+            </div>
+            <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
+              {[
+                ["Ticket", ticketNumber, true],
+                ["Platform", `${platformObj?.icon} ${platformObj?.label}`],
+                ["By", `${form.firstName} ${form.lastName}`],
+                ["Submitted", submissionDate],
+              ].filter(([,v]) => v).map(([k, v, accent], i, arr) => (
+                <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < arr.length - 1 ? 10 : 0 }}>
+                  <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
+                  <span style={{ fontSize: 13, color: accent ? accentColor : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)", textAlign: "right", maxWidth: "60%" }}>{v}</span>
+                </div>
+              ))}
+            </FormGlassCard>
+            <button onClick={() => { setSubmitted(false); setStep(0); }} style={{
+              padding: "13px 28px", background: C.maroonLight, color: "#fff", border: "none", borderRadius: 10,
+              fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)",
+              transition: "all 0.2s", boxShadow: "0 4px 16px rgba(138, 58, 77, 0.3)", marginTop: 20,
+            }}>Submit Another Draft</button>
           </div>
-          <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
-            {[
-              ["Ticket", ticketNumber, true],
-              ["Platform", `${platformObj?.icon} ${platformObj?.label}`],
-              ["By", `${form.firstName} ${form.lastName}`],
-              ["Submitted", submissionDate],
-            ].filter(([,v]) => v).map(([k, v, accent], i, arr) => (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < arr.length - 1 ? 10 : 0 }}>
-                <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
-                <span style={{ fontSize: 13, color: accent ? accentColor : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)", textAlign: "right", maxWidth: "60%" }}>{v}</span>
-              </div>
-            ))}
-          </FormGlassCard>
-          <button onClick={() => { setSubmitted(false); setStep(0); }} style={{ ...D.btn, marginTop: 20 }}>Submit Another Draft</button>
         </div>
       </div>
     );
@@ -132,12 +151,11 @@ function DIYFormBuilder({ onReturnToServices }) {
       case 0: return (
         <div style={D.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>✏️</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>DIY Post Builder</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>DIY Post Builder</h1>
           <p style={{ fontSize: 17, color: C.maroonLight, marginBottom: 4, fontWeight: 500 }}>Draft Your Own Post</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 32px" }}>
             Have a post idea? Write it up here and we'll<br />review, polish, and publish it for you.
           </p>
-          <button onClick={() => goTo(1)} style={D.btn}>Get Started →</button>
         </div>
       );
 
@@ -151,10 +169,6 @@ function DIYFormBuilder({ onReturnToServices }) {
           </div>
           <FormDeptSelect options={DIY_DEPTS} value={form.department} onChange={(v) => u("department", v)} />
           <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
-          <div style={D.navRow}>
-            <button onClick={() => goTo(0)} style={D.btnBack}>← Back</button>
-            <button onClick={() => goTo(2)} disabled={!form.firstName || !form.lastName || !form.department} style={D.btn}>Continue →</button>
-          </div>
         </div>
       );
 
@@ -175,10 +189,6 @@ function DIYFormBuilder({ onReturnToServices }) {
               </FormGlassCard>
             ))}
           </div>
-          <div style={D.navRow}>
-            <button onClick={() => goTo(1)} style={D.btnBack}>← Back</button>
-            <button onClick={() => goTo(3)} disabled={!form.platform} style={D.btn}>Continue →</button>
-          </div>
         </div>
       );
 
@@ -193,10 +203,6 @@ function DIYFormBuilder({ onReturnToServices }) {
           <FormInput label="Alt Text (for accessibility)" value={form.altText} onChange={(v) => u("altText", v)} placeholder="Describe the image for screen readers..." />
           <FormInput label="Hashtags" value={form.hashtags} onChange={(v) => u("hashtags", v)} placeholder="#NHBP #NottawaseppiHuronBandPotawatomi" />
           <FormInput label="Additional Notes" value={form.notes} onChange={(v) => u("notes", v)} placeholder="Any special instructions, timing preferences..." multiline />
-          <div style={D.navRow}>
-            <button onClick={() => goTo(2)} style={D.btnBack}>← Back</button>
-            <button onClick={() => goTo(4)} disabled={!form.caption} style={D.btn}>Review →</button>
-          </div>
         </div>
       );
 
@@ -225,10 +231,6 @@ function DIYFormBuilder({ onReturnToServices }) {
                 </div>
               ))}
             </FormGlassCard>
-            <div style={D.navRow}>
-              <button onClick={() => goTo(3)} style={D.btnBack}>← Back</button>
-              <button onClick={handleSubmit} style={{ ...D.btn, background: `linear-gradient(135deg, ${C.maroonLight}, ${C.turquoise})` }}>✏️ Submit Draft</button>
-            </div>
           </div>
         );
       }
@@ -237,10 +239,9 @@ function DIYFormBuilder({ onReturnToServices }) {
   };
 
   return (
-    <div style={D.container}>
+    <div style={containerStyle}>
+      <PortalBackground />
       {autoSave.showRestore && <RestorePrompt onYes={autoSave.restore} onNo={autoSave.dismiss} />}
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
-      <div style={D.bgOrb1} /><div style={D.bgOrb2} /><div style={D.bgOrb3} />
       {step > 0 && (
         <div style={D.progressWrap}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -250,27 +251,17 @@ function DIYFormBuilder({ onReturnToServices }) {
           <div style={D.progressTrack}><div style={{ ...D.progressBar, width: `${progress}%` }} /></div>
         </div>
       )}
-      <div style={{ ...D.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease", paddingBottom: 80 }}>
-        {renderStep()}
+      <div style={{ flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 24px 120px", zIndex: 1, position: "relative", overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 480, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+          {renderStep()}
+        </div>
       </div>
-      {/* Home turtle nav */}
-      <div style={{ position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-        <button onClick={onReturnToServices}
-          style={{
-            width: 44, height: 44, borderRadius: 22, cursor: "pointer", fontSize: 20, padding: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
-            WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
-            background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
-            border: "1px solid rgba(20,169,162,0.15)",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
-            transition: "border-color 0.3s ease, box-shadow 0.3s ease",
-          }}
-          onMouseDown={e => { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; }}
-          onMouseUp={e => { e.currentTarget.style.borderColor = "rgba(20,169,162,0.15)"; }}
-        >🐢</button>
-        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>Home</span>
-      </div>
+      <BottomFormNav
+        onBack={navBack} onNext={navNext} onHome={onReturnToServices}
+        canGoBack={step > 0} canGoNext={canAdvance()}
+        nextLabel={nextLabel}
+        showNext={step > 0}
+      />
     </div>
   );
 }

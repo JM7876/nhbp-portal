@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FC } from "../../theme";
+import { NHBP, FC } from "../../theme";
 import FormGlassCard from "../shared/FormGlassCard";
 import FormInput from "../shared/FormInput";
 import { FormDeptSelect } from "../shared/FormSelect";
 import FormBadge from "../shared/FormBadge";
+import { BottomFormNav } from "../shared/BottomNav";
 import RestorePrompt from "../shared/RestorePrompt";
+import PortalBackground from "../shared/PortalBackground";
 import { useAutoSave } from "../../utils/autoSave";
-import { validateEmail } from "../../utils/validation";
 
 function CommunityOutreachForm({ onReturnToServices }) {
   const C = FC;
@@ -105,31 +106,62 @@ function CommunityOutreachForm({ onReturnToServices }) {
   const urgencyObj = URGENCY_LEVELS.find(x => x.id === form.urgency);
   const accentColor = path === "alert" ? (urgencyObj?.color || C.turquoise) : C.turquoise;
 
-  // Progress: social = steps 0-4 (5 steps), alert = steps 0,1,6-9 (6 steps)
+  // Progress
   const socialLabels = ["", "Requester", "Platform & Schedule", "Content", "Review"];
   const alertLabels = ["", "Requester", "", "", "", "", "Urgency", "Alert Message", "Distribution", "Review"];
   const labels = path === "alert" ? alertLabels : socialLabels;
-  const totalSteps = path === "alert" ? 9 : 4;
   const currentStepIndex = path === "alert" ? (step <= 1 ? step : step - 4) : step;
   const progress = step > 0 ? Math.min((currentStepIndex / (path === "alert" ? 5 : 4)) * 100, 100) : 0;
 
-  // ── Local styles ──
+  // ── Navigation ──
+  const navBack = () => {
+    const backMap = { 1: 0, 2: 1, 3: 2, 4: 3, 6: 1, 7: 6, 8: 7, 9: 8 };
+    if (backMap[step] !== undefined) goTo(backMap[step]);
+  };
+
+  const navNext = () => {
+    if (step === 0) goTo(1);
+    else if (step === 1) goTo(path === "social" ? 2 : 6);
+    else if (step === 2) goTo(3);
+    else if (step === 3) goTo(4);
+    else if (step === 4) handleSubmit();
+    else if (step === 6) goTo(7);
+    else if (step === 7) goTo(8);
+    else if (step === 8) goTo(9);
+    else if (step === 9) handleSubmit();
+  };
+
+  const canAdvance = () => {
+    switch (step) {
+      case 0: return !!path;
+      case 1: return !!(form.firstName && form.lastName && form.department);
+      case 2: return Object.values(form.platforms).some(v => v) && !!form.schedule;
+      case 3: return !!form.description;
+      case 4: return true;
+      case 6: return !!form.urgency;
+      case 7: return !!(form.subject && form.message);
+      case 8: return Object.values(form.channels).some(v => v);
+      case 9: return true;
+      default: return true;
+    }
+  };
+
+  const nextLabel =
+    (step === 3 || step === 8) ? "Review →" :
+    (step === 4) ? "📣 Submit" :
+    (step === 9) ? "⚡ Submit" :
+    undefined;
+
+  // ── Styles ──
+  const containerStyle = { minHeight: "100vh", color: "var(--text-primary)", fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" };
   const S = {
-    container: { minHeight: "100vh", background: `linear-gradient(145deg, ${C.dark} 0%, #0d1420 50%, #0a1018 100%)`, fontFamily: "var(--font-primary)", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "40px 20px" },
-    bgOrb1: { position: "fixed", top: "-20%", right: "-15%", width: "50vw", height: "50vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}08, transparent 70%)`, pointerEvents: "none" },
-    bgOrb2: { position: "fixed", bottom: "-25%", left: "-10%", width: "60vw", height: "60vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.maroon}06, transparent 70%)`, pointerEvents: "none" },
-    bgOrb3: { position: "fixed", top: "40%", left: "50%", width: "30vw", height: "30vw", borderRadius: "50%", background: `radial-gradient(circle, ${C.turquoise}04, transparent 70%)`, pointerEvents: "none", transform: "translateX(-50%)" },
     progressWrap: { position: "fixed", top: 0, left: 0, right: 0, padding: "16px 24px 12px", zIndex: 10, background: `linear-gradient(180deg, ${C.dark}ee, transparent)` },
     progressTrack: { height: 3, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" },
     progressBar: { height: "100%", borderRadius: 2, transition: "width 0.4s cubic-bezier(0.4, 0, 0.2, 1)" },
-    content: { width: "100%", maxWidth: 480, zIndex: 2 },
     stepWrap: { textAlign: "left" },
-    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" },
+    stepTitle: { fontSize: 24, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" },
     stepDesc: { fontSize: 14, color: C.textSecondary, marginBottom: 28, lineHeight: 1.6 },
-    navRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 },
-    btn: { padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)", transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}` },
-    btnBack: { padding: "13px 20px", background: "transparent", color: C.textDim, border: "none", borderRadius: 10, fontSize: 14, cursor: "pointer", fontFamily: "var(--font-primary)" },
-    successWrap: { textAlign: "center", zIndex: 2, maxWidth: 440 },
+    successWrap: { textAlign: "center", maxWidth: 440 },
   };
 
   // ── SUBMITTED ──
@@ -140,48 +172,53 @@ function CommunityOutreachForm({ onReturnToServices }) {
     const scheduleObj = SCHEDULE_OPTIONS.find(s => s.id === form.schedule);
 
     return (
-      <div style={S.container}>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
-        <div style={S.bgOrb1} /><div style={S.bgOrb2} />
-        <div style={S.successWrap}>
-          <div style={{ fontSize: 64, marginBottom: 24 }}>{isSocial ? "📣" : (urgencyObj?.icon || "⚡")}</div>
-          <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>
-            {isSocial ? "Request Submitted" : "Alert Submitted"}
-          </h2>
-          <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
-            {isSocial
-              ? <>Your social media request has been routed<br />to Communications for review.</>
-              : <>Your {urgencyObj?.label.toLowerCase()} alert has been routed<br />to Communications for immediate action.</>
-            }
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            {isSocial && selectedPlatforms.map(p => <FormBadge key={p.id} name={`${p.icon} ${p.label}`} color={C.turquoise} />)}
-            {!isSocial && form.urgency === "emergency" && <FormBadge name="🚨 Emergency" color={C.red} />}
-            {!isSocial && form.urgency === "urgent" && <FormBadge name="⚡ Urgent" color={C.gold} />}
-            {!isSocial && form.urgency === "priority" && <FormBadge name="📢 Priority" color={C.turquoise} />}
+      <div style={containerStyle}>
+        <PortalBackground />
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 24px", zIndex: 1 }}>
+          <div style={S.successWrap}>
+            <div style={{ fontSize: 64, marginBottom: 24 }}>{isSocial ? "📣" : (urgencyObj?.icon || "⚡")}</div>
+            <h2 style={{ fontSize: 28, fontWeight: 700, color: C.textPrimary, marginBottom: 8, fontFamily: "var(--font-primary)" }}>
+              {isSocial ? "Request Submitted" : "Alert Submitted"}
+            </h2>
+            <p style={{ fontSize: 15, color: C.textSecondary, marginBottom: 28, lineHeight: 1.7 }}>
+              {isSocial
+                ? <>Your social media request has been routed<br />to Communications for review.</>
+                : <>Your {urgencyObj?.label.toLowerCase()} alert has been routed<br />to Communications for immediate action.</>
+              }
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
+              {isSocial && selectedPlatforms.map(p => <FormBadge key={p.id} name={`${p.icon} ${p.label}`} color={C.turquoise} />)}
+              {!isSocial && form.urgency === "emergency" && <FormBadge name="🚨 Emergency" color={C.red} />}
+              {!isSocial && form.urgency === "urgent" && <FormBadge name="⚡ Urgent" color={C.gold} />}
+              {!isSocial && form.urgency === "priority" && <FormBadge name="📢 Priority" color={C.turquoise} />}
+            </div>
+            <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
+              {(isSocial ? [
+                ["Ticket", ticketNumber, true],
+                ["Platforms", selectedPlatforms.map(p => `${p.icon} ${p.label}`).join(", ")],
+                ["Schedule", scheduleObj ? `${scheduleObj.icon} ${scheduleObj.label}` : ""],
+                ["By", `${form.firstName} ${form.lastName}`],
+                ["Submitted", submissionDate],
+              ] : [
+                ["Ticket", ticketNumber, true],
+                ["Urgency", `${urgencyObj?.icon} ${urgencyObj?.label}`],
+                ["Subject", form.subject],
+                ["Channels", selectedChannels.map(c => c.icon).join(" ")],
+                ["By", `${form.firstName} ${form.lastName}`],
+                ["Submitted", submissionDate],
+              ]).filter(([,v]) => v).map(([k, v, accent], i, arr) => (
+                <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < arr.length - 1 ? 10 : 0 }}>
+                  <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
+                  <span style={{ fontSize: 13, color: accent ? accentColor : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)", textAlign: "right", maxWidth: "60%" }}>{v}</span>
+                </div>
+              ))}
+            </FormGlassCard>
+            <button onClick={() => { setSubmitted(false); setStep(0); setPath(null); }} style={{
+              padding: "13px 28px", background: C.turquoise, color: "#fff", border: "none", borderRadius: 10,
+              fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-primary)",
+              transition: "all 0.2s", boxShadow: `0 4px 16px ${C.turquoiseGlow}`, marginTop: 20,
+            }}>Submit Another Request</button>
           </div>
-          <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
-            {(isSocial ? [
-              ["Ticket", ticketNumber, true],
-              ["Platforms", selectedPlatforms.map(p => `${p.icon} ${p.label}`).join(", ")],
-              ["Schedule", scheduleObj ? `${scheduleObj.icon} ${scheduleObj.label}` : ""],
-              ["By", `${form.firstName} ${form.lastName}`],
-              ["Submitted", submissionDate],
-            ] : [
-              ["Ticket", ticketNumber, true],
-              ["Urgency", `${urgencyObj?.icon} ${urgencyObj?.label}`],
-              ["Subject", form.subject],
-              ["Channels", selectedChannels.map(c => c.icon).join(" ")],
-              ["By", `${form.firstName} ${form.lastName}`],
-              ["Submitted", submissionDate],
-            ]).filter(([,v]) => v).map(([k, v, accent], i, arr) => (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: i < arr.length - 1 ? 10 : 0 }}>
-                <span style={{ fontSize: 12, color: C.textDim, textTransform: "uppercase", letterSpacing: "0.05em" }}>{k}</span>
-                <span style={{ fontSize: 13, color: accent ? accentColor : C.textPrimary, fontWeight: accent ? 700 : 400, fontFamily: "var(--font-primary)", textAlign: "right", maxWidth: "60%" }}>{v}</span>
-              </div>
-            ))}
-          </FormGlassCard>
-          <button onClick={() => { setSubmitted(false); setStep(0); setPath(null); }} style={{ ...S.btn, marginTop: 20 }}>Submit Another Request</button>
         </div>
       </div>
     );
@@ -194,7 +231,7 @@ function CommunityOutreachForm({ onReturnToServices }) {
       case 0: return (
         <div style={S.stepWrap}>
           <div style={{ fontSize: 56, marginBottom: 20 }}>📣</div>
-          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "'Playfair Display', serif" }}>Community Outreach</h1>
+          <h1 style={{ fontSize: 32, fontWeight: 700, color: C.textPrimary, marginBottom: 6, fontFamily: "var(--font-primary)" }}>Community Outreach</h1>
           <p style={{ fontSize: 17, color: C.turquoiseLight, marginBottom: 4, fontWeight: 500 }}>Social Media & Instant Alerts</p>
           <p style={{ fontSize: 13, color: C.textSecondary, lineHeight: 1.7, maxWidth: 380, margin: "16px auto 32px" }}>
             Need something posted on social media?<br />Or need to send an urgent alert?<br />Choose your path below.
@@ -217,9 +254,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
               </div>
             </FormGlassCard>
           </div>
-          <div style={{ ...S.navRow, justifyContent: "center", marginTop: 24 }}>
-            <button onClick={() => goTo(1)} disabled={!path} style={{ ...S.btn, background: path === "alert" ? C.red : C.turquoise, boxShadow: path === "alert" ? "0 4px 16px rgba(186,12,47,0.3)" : `0 4px 16px ${C.turquoiseGlow}` }}>Continue →</button>
-          </div>
         </div>
       );
 
@@ -236,10 +270,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
           <div style={{ display: "flex", gap: 12 }}>
             <FormInput label="Email" value={form.email} type="email" required onChange={(v) => u("email", v)} placeholder="your@nhbp-nsn.gov" />
             {path === "alert" && <FormInput label="Phone" value={form.phone} onChange={(v) => u("phone", v)} placeholder="(555) 555-5555" />}
-          </div>
-          <div style={S.navRow}>
-            <button onClick={() => goTo(0)} style={S.btnBack}>← Back</button>
-            <button onClick={() => goTo(path === "social" ? 2 : 6)} disabled={!form.firstName || !form.lastName || !form.department} style={{ ...S.btn, background: accentColor }}>Continue →</button>
           </div>
         </div>
       );
@@ -277,10 +307,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
           {form.schedule === "date" && (
             <FormInput label="Preferred Date" value={form.scheduleDate} type="date" onChange={(v) => u("scheduleDate", v)} />
           )}
-          <div style={S.navRow}>
-            <button onClick={() => goTo(1)} style={S.btnBack}>← Back</button>
-            <button onClick={() => goTo(3)} disabled={!Object.values(form.platforms).some(v => v) || !form.schedule} style={S.btn}>Continue →</button>
-          </div>
         </div>
       );
 
@@ -294,10 +320,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
             📁 Need to attach images or files? Email them to <span style={{ color: C.turquoiseLight }}>communications@nhbp-nsn.gov</span> and reference your ticket number after submitting.
           </div>
           <FormInput label="Additional Notes" value={form.notes} onChange={(v) => u("notes", v)} placeholder="Hashtags, tags, special instructions..." multiline />
-          <div style={S.navRow}>
-            <button onClick={() => goTo(2)} style={S.btnBack}>← Back</button>
-            <button onClick={() => goTo(4)} disabled={!form.description} style={S.btn}>Review →</button>
-          </div>
         </div>
       );
 
@@ -327,10 +349,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
                 </div>
               ))}
             </FormGlassCard>
-            <div style={S.navRow}>
-              <button onClick={() => goTo(3)} style={S.btnBack}>← Back</button>
-              <button onClick={handleSubmit} style={{ ...S.btn, background: `linear-gradient(135deg, ${C.turquoise}, ${C.green})` }}>📣 Submit Request</button>
-            </div>
           </div>
         );
       }
@@ -355,10 +373,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
               </FormGlassCard>
             ))}
           </div>
-          <div style={S.navRow}>
-            <button onClick={() => goTo(1)} style={S.btnBack}>← Back</button>
-            <button onClick={() => goTo(7)} disabled={!form.urgency} style={{ ...S.btn, background: accentColor }}>Continue →</button>
-          </div>
         </div>
       );
 
@@ -375,10 +389,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
             <FormInput label="Time" value={form.effectiveTime} type="time" onChange={(v) => u("effectiveTime", v)} />
           </div>
           <FormInput label="Approved By (if applicable)" value={form.approvedBy} onChange={(v) => u("approvedBy", v)} placeholder="Director, Council, Department Head..." />
-          <div style={S.navRow}>
-            <button onClick={() => goTo(6)} style={S.btnBack}>← Back</button>
-            <button onClick={() => goTo(8)} disabled={!form.subject || !form.message} style={{ ...S.btn, background: accentColor }}>Continue →</button>
-          </div>
         </div>
       );
 
@@ -395,10 +405,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
                 <span style={{ fontSize: 13, fontWeight: 600, color: form.channels[c.id] ? C.textPrimary : C.textSecondary }}>{c.label}</span>
               </FormGlassCard>
             ))}
-          </div>
-          <div style={S.navRow}>
-            <button onClick={() => goTo(7)} style={S.btnBack}>← Back</button>
-            <button onClick={() => goTo(9)} disabled={!Object.values(form.channels).some(v => v)} style={{ ...S.btn, background: accentColor }}>Review →</button>
           </div>
         </div>
       );
@@ -431,10 +437,6 @@ function CommunityOutreachForm({ onReturnToServices }) {
                 </div>
               ))}
             </FormGlassCard>
-            <div style={S.navRow}>
-              <button onClick={() => goTo(8)} style={S.btnBack}>← Back</button>
-              <button onClick={handleSubmit} style={{ ...S.btn, background: `linear-gradient(135deg, ${accentColor}, ${C.maroon})` }}>⚡ Submit Alert</button>
-            </div>
           </div>
         );
       }
@@ -443,10 +445,9 @@ function CommunityOutreachForm({ onReturnToServices }) {
   };
 
   return (
-    <div style={S.container}>
+    <div style={containerStyle}>
+      <PortalBackground />
       {autoSave.showRestore && <RestorePrompt onYes={autoSave.restore} onNo={autoSave.dismiss} />}
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
-      <div style={S.bgOrb1} /><div style={S.bgOrb2} /><div style={S.bgOrb3} />
       {step > 0 && (
         <div style={S.progressWrap}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -456,27 +457,17 @@ function CommunityOutreachForm({ onReturnToServices }) {
           <div style={S.progressTrack}><div style={{ ...S.progressBar, width: `${progress}%`, background: `linear-gradient(90deg, ${accentColor}, ${accentColor}cc)` }} /></div>
         </div>
       )}
-      <div style={{ ...S.content, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease", paddingBottom: 80 }}>
-        {renderStep()}
+      <div style={{ flex: 1, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "20px 24px 120px", zIndex: 1, position: "relative", overflowY: "auto" }}>
+        <div style={{ width: "100%", maxWidth: 480, opacity: animating ? 0 : 1, transform: animating ? "translateY(12px)" : "translateY(0)", transition: "opacity 0.25s ease, transform 0.25s ease" }}>
+          {renderStep()}
+        </div>
       </div>
-      {/* Home turtle nav */}
-      <div style={{ position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-        <button onClick={onReturnToServices}
-          style={{
-            width: 44, height: 44, borderRadius: 22, cursor: "pointer", fontSize: 20, padding: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
-            WebkitBackdropFilter: "blur(20px) saturate(1.2) brightness(1.05)",
-            background: "linear-gradient(145deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))",
-            border: "1px solid rgba(20,169,162,0.15)",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)",
-            transition: "border-color 0.3s ease, box-shadow 0.3s ease",
-          }}
-          onMouseDown={e => { e.currentTarget.style.borderColor = "rgba(200,80,130,0.25)"; }}
-          onMouseUp={e => { e.currentTarget.style.borderColor = "rgba(20,169,162,0.15)"; }}
-        >🐢</button>
-        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em" }}>Home</span>
-      </div>
+      <BottomFormNav
+        onBack={navBack} onNext={navNext} onHome={onReturnToServices}
+        canGoBack={step > 0} canGoNext={canAdvance()}
+        nextLabel={nextLabel}
+        showNext={step > 0}
+      />
     </div>
   );
 }
