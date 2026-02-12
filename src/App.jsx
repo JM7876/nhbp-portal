@@ -5067,6 +5067,8 @@ export default function NHBPPortal() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [ticketNumber, setTicketNumber] = useState(null);
+  const [toast, setToast] = useState(null);
+  const toastTimer = useRef(null);
   const inputRef = useRef(null);
   const totalSteps = 7;
 
@@ -5201,6 +5203,11 @@ export default function NHBPPortal() {
                       if (s.id === "turtle-press") { setScreen("turtle-press"); return; }
                       if (s.id === "other") { setScreen("general-request"); return; }
                     }
+                    if (s.status === "coming") {
+                      if (toastTimer.current) clearTimeout(toastTimer.current);
+                      setToast(s.label);
+                      toastTimer.current = setTimeout(() => setToast(null), 2500);
+                    }
                   }}
                   style={{
                     padding: "22px 18px", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8,
@@ -5232,6 +5239,28 @@ export default function NHBPPortal() {
             </div>
           </div>
         </div>
+        {/* Coming Soon toast */}
+        {toast && (
+          <div key={toast} style={{
+            position: "fixed", bottom: 80, left: 0, right: 0, zIndex: 60,
+            display: "flex", justifyContent: "center", pointerEvents: "none",
+          }}>
+            <div style={{
+              backdropFilter: "blur(18px) saturate(1.3)",
+              WebkitBackdropFilter: "blur(18px) saturate(1.3)",
+              background: "rgba(15, 20, 30, 0.75)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderLeft: `3px solid ${NHBP.turquoise}`,
+              borderRadius: 10, padding: "12px 20px",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)",
+              fontFamily: "var(--font-primary)", fontSize: 13, color: "rgba(255,255,255,0.85)",
+              whiteSpace: "nowrap",
+              animation: "fadeSlide 0.3s ease forwards",
+            }}>
+              Coming Soon — {toast} is on its way!
+            </div>
+          </div>
+        )}
         {/* Home turtle nav */}
         <div style={{ position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", zIndex: 50, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
           <button onClick={resetToWelcome}
