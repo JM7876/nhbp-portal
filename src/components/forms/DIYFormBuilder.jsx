@@ -187,7 +187,7 @@ function DIYFormBuilder({ onReturnToServices }) {
           <h2 style={D.stepTitle}>Build Your Post</h2>
           <p style={D.stepDesc}>Write your draft — we'll review and polish before publishing.</p>
           <FormInput label="Caption / Post Text" value={form.caption} required onChange={(v) => u("caption", v)} placeholder="Write your post here... Include any details, links, or calls to action." multiline inputRef={inputRef} />
-          <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6, padding: "12px 16px", background: "rgba(255,255,255,0.02)", borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6, padding: "12px 16px", background: C.glass, borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 20 }}>
             📁 Want to include an image? Email it to <span style={{ color: C.maroonLight }}>communications@nhbp-nsn.gov</span> and reference your ticket number after submitting.
           </div>
           <FormInput label="Alt Text (for accessibility)" value={form.altText} onChange={(v) => u("altText", v)} placeholder="Describe the image for screen readers..." />

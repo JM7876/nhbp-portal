@@ -50,7 +50,7 @@ function CommunityOutreachForm({ onReturnToServices }) {
 
   const URGENCY_LEVELS = [
     { id: "emergency", icon: "🚨", label: "Emergency", desc: "Immediate — safety, closures, critical notices", color: C.red, glow: "rgba(186,12,47,0.3)" },
-    { id: "urgent", icon: "⚡", label: "Urgent", desc: "Same day — time-sensitive announcements", color: "#f59e0b", glow: "rgba(245,158,11,0.3)" },
+    { id: "urgent", icon: "⚡", label: "Urgent", desc: "Same day — time-sensitive announcements", color: C.gold, glow: "rgba(201,168,76,0.3)" },
     { id: "priority", icon: "📢", label: "Priority", desc: "Within 24 hours — important but not critical", color: C.turquoise, glow: C.turquoiseGlow },
   ];
 
@@ -155,10 +155,10 @@ function CommunityOutreachForm({ onReturnToServices }) {
             }
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 20 }}>
-            {isSocial && selectedPlatforms.map(p => <FormBadge key={p.id} name={`${p.icon} ${p.label}`} color="#00c2e0" />)}
-            {!isSocial && form.urgency === "emergency" && <FormBadge name="🚨 Emergency" color="#eb5a46" />}
-            {!isSocial && form.urgency === "urgent" && <FormBadge name="⚡ Urgent" color="#ff9f1a" />}
-            {!isSocial && form.urgency === "priority" && <FormBadge name="📢 Priority" color="#00c2e0" />}
+            {isSocial && selectedPlatforms.map(p => <FormBadge key={p.id} name={`${p.icon} ${p.label}`} color={C.turquoise} />)}
+            {!isSocial && form.urgency === "emergency" && <FormBadge name="🚨 Emergency" color={C.red} />}
+            {!isSocial && form.urgency === "urgent" && <FormBadge name="⚡ Urgent" color={C.gold} />}
+            {!isSocial && form.urgency === "priority" && <FormBadge name="📢 Priority" color={C.turquoise} />}
           </div>
           <FormGlassCard style={{ textAlign: "left", maxWidth: 340, margin: "0 auto 24px" }}>
             {(isSocial ? [
@@ -290,7 +290,7 @@ function CommunityOutreachForm({ onReturnToServices }) {
           <h2 style={S.stepTitle}>Content</h2>
           <p style={S.stepDesc}>Tell us what you'd like posted.</p>
           <FormInput label="Description / Copy" value={form.description} required onChange={(v) => u("description", v)} placeholder="What should the post say? Include any key details, links, dates..." multiline inputRef={inputRef} />
-          <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6, padding: "12px 16px", background: "rgba(255,255,255,0.02)", borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.6, padding: "12px 16px", background: C.glass, borderRadius: 10, border: `1px solid ${C.border}`, marginBottom: 20 }}>
             📁 Need to attach images or files? Email them to <span style={{ color: C.turquoiseLight }}>communications@nhbp-nsn.gov</span> and reference your ticket number after submitting.
           </div>
           <FormInput label="Additional Notes" value={form.notes} onChange={(v) => u("notes", v)} placeholder="Hashtags, tags, special instructions..." multiline />
